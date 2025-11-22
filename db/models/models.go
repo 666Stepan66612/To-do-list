@@ -48,7 +48,7 @@ func (r *TaskRepository) CreateTask(t *Task) error {
 func (r *TaskRepository) GetAllTasks() ([]Task, error) {
 	var rows *sql.Rows
 	var err error
-	rows, err = r.DB.Query(`SELECT * FROM Tasks ORDER BY id`)
+	rows, err = r.DB.Query(`SELECT * FROM Tasks`)
 	defer rows.Close()
 
 	var tasks []Task
