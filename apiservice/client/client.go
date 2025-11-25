@@ -1,4 +1,4 @@
-package db_client
+package client
 
 import (
 	models "apiservice/models"
