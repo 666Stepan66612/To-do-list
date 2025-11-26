@@ -10,7 +10,7 @@ import (
 )
 
 func main(){
-	dbClient := client.NewDBClient("http://db:8080")
+	dbClient := client.NewDBClient("http://db-service:8080")
 
 	taskHandlers := handlers.NewTaskHandlers(dbClient)
 

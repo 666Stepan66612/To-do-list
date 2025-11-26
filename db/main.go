@@ -36,7 +36,6 @@ func main(){
 	router.Path("/getbyid/{id}").Methods("GET").HandlerFunc(taskHandlers.HandleGetByID)
 	router.Path("/getbyname/{name}").Methods("GET").HandlerFunc(taskHandlers.HandleGetByName)
 
-	 log.Println("Server starting on :8080")
     if err := http.ListenAndServe(":8080", router); err != nil {
         log.Fatal(err)
     }
