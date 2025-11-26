@@ -11,8 +11,6 @@ services:
     build: 
       context: ./db
       dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
     depends_on:
       - postgres
     environment:
@@ -20,8 +18,10 @@ services:
 
   api-service:
     build:
-      context: ./api
+      context: ./apiservice
       dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
     depends_on:
       - db-service
     environment:
