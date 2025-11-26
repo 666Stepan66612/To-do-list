@@ -1,4 +1,4 @@
-package apiservice
+package main
 
 import (
 	"apiservice/client"

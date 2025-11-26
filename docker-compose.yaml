@@ -20,5 +20,16 @@ services:
     environment:
       - WAIT_HOSTS=postgres:5432
 
+  api-service:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      - db-service
+    environment:
+      - WAIT_HOSTS=db-service:8080
+
 volumes:
   postgres_data:
