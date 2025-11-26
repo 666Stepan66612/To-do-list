@@ -15,7 +15,7 @@ type DBClient struct {
 
 func NewDBClient(baseURL string) *DBClient {
 	return &DBClient{
-		BaseURL: "http://db-service:8080",
+		BaseURL: "http://db:8080",
 		Client:  &http.Client{},
 	}
 }
