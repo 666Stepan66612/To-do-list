@@ -25,8 +25,14 @@ func main(){
 	router.Path("/getbyid/{id}").Methods("GET").HandlerFunc(taskHandlers.HandleGetTasksByID)
 	router.Path("/getbyname/{name}").Methods("GET").HandlerFunc(taskHandlers.HandleGetTasksByName)
 
+	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+        w.WriteHeader(http.StatusOK)
+        w.Write([]byte("API Service is healthy"))
+    }).Methods("GET")
+	
 	log.Println("API Service starting on :8081")
     if err := http.ListenAndServe(":8081", router); err != nil {
         log.Fatal(err)
     }
+
 }
