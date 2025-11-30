@@ -7,7 +7,7 @@ A microservices-based task management application built with Go, PostgreSQL, and
 The application consists of three main services:
 
 - **API Service** (port 8081): External HTTP API that handles client requests
-- **DB Service** (port 8080): Internal service that manages database operations
+- **DB Service** (port 8080): Internal service that manages database operations (isolated)
 - **PostgreSQL**: Database for storing tasks
 
 ## Features
