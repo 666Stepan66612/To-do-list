@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"time"
+	"fmt"
 )
 
 type Task struct {
@@ -175,10 +176,20 @@ func (r *TaskRepository) DeleteTask(id int) error {
 }
 
 func (r *TaskRepository) CompleteTask(id int) error {
-	_, err := r.DB.Exec(`
-	UPDATE tasks 
-	SET complete = TRUE,
-	completeat = Now()
-	WHERE id = $1`, id)
-	return err
+    result, err := r.DB.Exec(`
+    UPDATE tasks 
+    SET complete = TRUE,
+    completeat = Now()
+    WHERE id = $1 AND complete = FALSE`, id)
+    
+    if err != nil {
+        return err
+    }
+    
+    rows, _ := result.RowsAffected()
+    if rows == 0 {
+        return fmt.Errorf("task already completed or not found")
+    }
+    
+    return nil
 }
