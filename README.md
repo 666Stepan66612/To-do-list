@@ -215,7 +215,7 @@ make clean
 ┌──────────┐     HTTP      ┌─────────────┐     HTTP      ┌────────────┐
 │ Frontend ├──────────────►│ API Service ├──────────────►│ DB Service │
 │ (nginx)  │  localhost:   │   (Go)      │   internal    │   (Go)     │
-│          │     8080      │             │               │            │
+│          │     8081      │             │               │            │
 └──────────┘               └──────┬──────┘               └─────┬──────┘
                                   │                            │
                                   │ Kafka Events               │ SQL
