@@ -79,5 +79,14 @@ services:
     environment:
       - KAFKA_BROKERS=kafka:29092
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - api-service
+
 volumes:
   postgres_data:

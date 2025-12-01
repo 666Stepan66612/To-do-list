@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TODO List</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .add-task {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .add-task input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .add-task input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .add-task button {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .add-task button:hover {
+            background: #5568d3;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        
+        .filters button {
+            padding: 8px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .filters button.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .task-list {
+            list-style: none;
+        }
+        
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+        
+        .task-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+        
+        .task-item.completed {
+            opacity: 0.6;
+        }
+        
+        .task-item.completed .task-name {
+            text-decoration: line-through;
+        }
+        
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+        
+        .task-info {
+            flex: 1;
+        }
+        
+        .task-name {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .task-dates {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .task-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-delete {
+            padding: 8px 15px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .btn-delete:hover {
+            background: #c82333;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 TODO List</h1>
+        
+        <div class="error" id="error"></div>
+        <div class="success" id="success"></div>
+        
+        <div class="add-task">
+            <input type="text" id="taskInput" placeholder="Введите название задачи..." />
+            <button onclick="createTask()">Добавить</button>
+        </div>
+        
+        <div class="filters">
+            <button class="active" onclick="filterTasks('all')">Все</button>
+            <button onclick="filterTasks('active')">Активные</button>
+            <button onclick="filterTasks('completed')">Завершённые</button>
+        </div>
+        
+        <ul class="task-list" id="taskList"></ul>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8081';
+        let currentFilter = 'all';
+        let tasks = [];
+
+        // Загрузка задач при старте
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTasks();
+        });
+
+        // Обработка Enter в поле ввода
+        document.getElementById('taskInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                createTask();
+            }
+        });
+
+        async function loadTasks() {
+            try {
+                const response = await fetch(`${API_URL}/tasks`);
+                if (!response.ok) throw new Error('Ошибка загрузки задач');
+                
+                tasks = await response.json();
+                renderTasks();
+            } catch (error) {
+                showError('Не удалось загрузить задачи: ' + error.message);
+            }
+        }
+
+        async function createTask() {
+            const input = document.getElementById('taskInput');
+            const taskName = input.value.trim();
+            
+            if (!taskName) {
+                showError('Введите название задачи');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: taskName })
+                });
+                
+                if (!response.ok) throw new Error('Ошибка создания задачи');
+                
+                input.value = '';
+                showSuccess('Задача добавлена');
+                await loadTasks();
+            } catch (error) {
+                showError('Не удалось создать задачу: ' + error.message);
+            }
+        }
+
+        async function completeTask(id, complete) {
+            if (complete) {
+                showError('Задача уже завершена');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/complete/${id}`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) throw new Error('Ошибка завершения задачи');
+                
+                showSuccess('Задача завершена');
+                await loadTasks();
+            } catch (error) {
+                showError('Не удалось завершить задачу: ' + error.message);
+            }
+        }
+
+        async function deleteTask(id) {
+            if (!confirm('Удалить задачу?')) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/delete/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) throw new Error('Ошибка удаления задачи');
+                
+                showSuccess('Задача удалена');
+                await loadTasks();
+            } catch (error) {
+                showError('Не удалось удалить задачу: ' + error.message);
+            }
+        }
+
+        function filterTasks(filter) {
+            currentFilter = filter;
+            
+            // Обновляем активную кнопку
+            document.querySelectorAll('.filters button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderTasks();
+        }
+
+        function renderTasks() {
+            const taskList = document.getElementById('taskList');
+            
+            let filteredTasks = tasks;
+            if (currentFilter === 'active') {
+                filteredTasks = tasks.filter(t => !t.complete);
+            } else if (currentFilter === 'completed') {
+                filteredTasks = tasks.filter(t => t.complete);
+            }
+            
+            if (filteredTasks.length === 0) {
+                taskList.innerHTML = '<div class="empty-state">Нет задач</div>';
+                return;
+            }
+            
+            taskList.innerHTML = filteredTasks.map(task => `
+                <li class="task-item ${task.complete ? 'completed' : ''}">
+                    <input 
+                        type="checkbox" 
+                        class="task-checkbox" 
+                        ${task.complete ? 'checked' : ''}
+                        ${task.complete ? 'disabled' : ''}
+                        onchange="completeTask(${task.id}, ${task.complete})"
+                    />
+                    <div class="task-info">
+                        <div class="task-name">${escapeHtml(task.name)}</div>
+                        <div class="task-dates">
+                            Создано: ${formatDate(task.createtime)}
+                            ${task.completeat ? ' | Завершено: ' + formatDate(task.completeat) : ''}
+                        </div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn-delete" onclick="deleteTask(${task.id})">Удалить</button>
+                    </div>
+                </li>
+            `).join('');
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleString('ru-RU', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
