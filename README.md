@@ -4,11 +4,13 @@ A microservices-based task management application built with Go, PostgreSQL, and
 
 ## Architecture
 
-The application consists of three main services:
+The application consists of five main services:
 
-- **API Service** (port 8081): External HTTP API that handles client requests
-- **DB Service** (port 8080): Internal service that manages database operations (isolated)
+- **API Service** (port 8081): External HTTP API that handles client requests and sends events to Kafka
+- **DB Service** (port 8080): Internal service that manages database operations
 - **PostgreSQL**: Database for storing tasks
+- **Kafka + Zookeeper**: Message broker for event logging
+- **Kafka Service**: Consumer that logs all events to a file for audit and monitoring
 
 ## Features
 
@@ -18,13 +20,17 @@ The application consists of three main services:
 - Delete tasks
 - Search tasks by ID or name
 - RESTful API design
+- **Event logging via Kafka** - All actions (create, update, delete, complete) are logged to `logs/events.log` for audit and monitoring
 
 ## Tech Stack
 
 - **Go** - Backend services
 - **PostgreSQL 15** - Database
+- **Apache Kafka** - Event streaming and logging
+- **Zookeeper** - Kafka coordination
 - **Docker & Docker Compose** - Containerization
 - **Gorilla Mux** - HTTP routing
+- **Sarama** - Kafka client for Go
 
 ## Project Structure
 
@@ -33,10 +39,15 @@ The application consists of three main services:
 ├── apiservice/          # External API service
 │   ├── client/         # HTTP client for DB service
 │   ├── handlersForDB/  # HTTP request handlers
+│   ├── kafka/          # Kafka producer for event logging
 │   └── models/         # Data models
 ├── db/                 # Database service
 │   ├── handlers/       # HTTP request handlers
 │   └── models/         # Data models and repository
+├── kafkaservice/       # Kafka consumer for event logging
+│   └── main.go         # Consumes events and writes to log file
+├── logs/               # Event logs (created at runtime)
+│   └── events.log      # All task-related events
 └── docker-compose.yaml # Service orchestration
 ```
 
@@ -144,8 +155,25 @@ docker-compose down -v
 ## Service Communication
 
 - API Service communicates with DB Service via internal HTTP calls
+- API Service sends all action events to Kafka topic `task-events`
+- Kafka Service consumes events from Kafka and writes them to `logs/events.log`
 - DB Service connects directly to PostgreSQL database
-- PostgreSQL uses health checks to ensure it's ready before dependent services start
+- PostgreSQL, Kafka, and Zookeeper use health checks to ensure readiness before dependent services start
+
+## Event Logging
+
+All task operations are logged to `logs/events.log` with the following format:
+
+```json
+{
+  "timestamp": "2025-12-01T10:23:45Z",
+  "action": "CREATE_TASK",
+  "details": "Task created: id=1, name=Buy milk",
+  "status": "SUCCESS"
+}
+```
+
+Supported events: `CREATE_TASK`, `DELETE_TASK`, `COMPLETE_TASK`
 
 ## Environment Variables
 
