@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,49 +11,63 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
+
         .container {
             max-width: 800px;
             margin: 0 auto;
             background: white;
             border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
             padding: 30px;
         }
-        
+
         h1 {
             color: #333;
             margin-bottom: 30px;
             text-align: center;
         }
-        
+
         .add-task {
             display: flex;
+            flex-direction: column;
             gap: 10px;
             margin-bottom: 30px;
         }
-        
-        .add-task input {
+
+        .add-task-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .add-task input,
+        .add-task textarea {
             flex: 1;
             padding: 12px;
             border: 2px solid #ddd;
             border-radius: 5px;
             font-size: 16px;
             transition: border-color 0.3s;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
-        .add-task input:focus {
+
+        .add-task textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .add-task input:focus,
+        .add-task textarea:focus {
             outline: none;
             border-color: #667eea;
         }
-        
+
         .add-task button {
             padding: 12px 30px;
             background: #667eea;
@@ -62,19 +77,20 @@
             font-size: 16px;
             cursor: pointer;
             transition: background 0.3s;
+            align-self: flex-start;
         }
-        
+
         .add-task button:hover {
             background: #5568d3;
         }
-        
+
         .filters {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
             justify-content: center;
         }
-        
+
         .filters button {
             padding: 8px 20px;
             border: 2px solid #667eea;
@@ -84,16 +100,16 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-        
+
         .filters button.active {
             background: #667eea;
             color: white;
         }
-        
+
         .task-list {
             list-style: none;
         }
-        
+
         .task-item {
             display: flex;
             align-items: center;
@@ -103,47 +119,48 @@
             margin-bottom: 10px;
             transition: all 0.3s;
         }
-        
+
         .task-item:hover {
             background: #e9ecef;
             transform: translateX(5px);
         }
-        
+
         .task-item.completed {
-            opacity: 0.6;
+            background: #d4edda;
+            border-left: 4px solid #28a745;
         }
-        
-        .task-item.completed .task-name {
-            text-decoration: line-through;
+
+        .task-item.completed:hover {
+            background: #c3e6cb;
         }
-        
+
         .task-checkbox {
             width: 20px;
             height: 20px;
             margin-right: 15px;
             cursor: pointer;
         }
-        
+
         .task-info {
             flex: 1;
         }
-        
+
         .task-name {
             font-size: 16px;
             color: #333;
             margin-bottom: 5px;
         }
-        
+
         .task-dates {
             font-size: 12px;
             color: #666;
         }
-        
+
         .task-actions {
             display: flex;
             gap: 10px;
         }
-        
+
         .btn-delete {
             padding: 8px 15px;
             background: #dc3545;
@@ -154,17 +171,17 @@
             font-size: 14px;
             transition: background 0.3s;
         }
-        
+
         .btn-delete:hover {
             background: #c82333;
         }
-        
+
         .empty-state {
             text-align: center;
             padding: 40px;
             color: #999;
         }
-        
+
         .error {
             background: #f8d7da;
             color: #721c24;
@@ -173,7 +190,7 @@
             margin-bottom: 20px;
             display: none;
         }
-        
+
         .success {
             background: #d4edda;
             color: #155724;
@@ -182,27 +199,142 @@
             margin-bottom: 20px;
             display: none;
         }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #999;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .modal-field {
+            margin-bottom: 15px;
+        }
+
+        .modal-field label {
+            display: block;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .modal-field-value {
+            color: #333;
+            font-size: 16px;
+            word-wrap: break-word;
+        }
+
+        .task-item:hover {
+            cursor: pointer;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>📝 TODO List</h1>
-        
+
         <div class="error" id="error"></div>
         <div class="success" id="success"></div>
-        
+
         <div class="add-task">
-            <input type="text" id="taskInput" placeholder="Введите название задачи..." />
-            <button onclick="createTask()">Добавить</button>
+            <div class="add-task-row">
+                <input type="text" id="taskInput" placeholder="Введите название задачи..." />
+                <button onclick="createTask()">Добавить</button>
+            </div>
+            <textarea id="taskDescription" placeholder="Описание задачи (необязательно)..."></textarea>
         </div>
-        
+
         <div class="filters">
             <button class="active" onclick="filterTasks('all')">Все</button>
             <button onclick="filterTasks('active')">Активные</button>
             <button onclick="filterTasks('completed')">Завершённые</button>
         </div>
-        
+
         <ul class="task-list" id="taskList"></ul>
+    </div>
+
+    <!-- Modal for task details -->
+    <div class="modal" id="taskModal" onclick="closeModalOnBackdrop(event)">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Детали задачи</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-field">
+                <label>ID:</label>
+                <div class="modal-field-value" id="modalId"></div>
+            </div>
+            <div class="modal-field">
+                <label>Название:</label>
+                <div class="modal-field-value" id="modalName"></div>
+            </div>
+            <div class="modal-field">
+                <label>Описание:</label>
+                <div class="modal-field-value" id="modalText"></div>
+            </div>
+            <div class="modal-field">
+                <label>Создано:</label>
+                <div class="modal-field-value" id="modalCreateTime"></div>
+            </div>
+            <div class="modal-field">
+                <label>Статус:</label>
+                <div class="modal-field-value" id="modalStatus"></div>
+            </div>
+            <div class="modal-field" id="modalCompleteAtField" style="display: none;">
+                <label>Завершено:</label>
+                <div class="modal-field-value" id="modalCompleteAt"></div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -226,7 +358,7 @@
             try {
                 const response = await fetch(`${API_URL}/tasks`);
                 if (!response.ok) throw new Error('Ошибка загрузки задач');
-                
+
                 tasks = await response.json();
                 renderTasks();
             } catch (error) {
@@ -236,45 +368,49 @@
 
         async function createTask() {
             const input = document.getElementById('taskInput');
+            const descriptionInput = document.getElementById('taskDescription');
             const taskName = input.value.trim();
-            
+            const taskDescription = descriptionInput.value.trim();
+
             if (!taskName) {
                 showError('Введите название задачи');
                 return;
             }
-            
+
             try {
                 const response = await fetch(`${API_URL}/create`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ name: taskName })
+                    body: JSON.stringify({
+                        name: taskName,
+                        text: taskDescription
+                    })
                 });
-                
+
                 if (!response.ok) throw new Error('Ошибка создания задачи');
-                
+
                 input.value = '';
+                descriptionInput.value = '';
                 showSuccess('Задача добавлена');
                 await loadTasks();
             } catch (error) {
                 showError('Не удалось создать задачу: ' + error.message);
             }
-        }
-
-        async function completeTask(id, complete) {
+        } async function completeTask(id, complete) {
             if (complete) {
                 showError('Задача уже завершена');
                 return;
             }
-            
+
             try {
                 const response = await fetch(`${API_URL}/complete/${id}`, {
                     method: 'POST'
                 });
-                
+
                 if (!response.ok) throw new Error('Ошибка завершения задачи');
-                
+
                 showSuccess('Задача завершена');
                 await loadTasks();
             } catch (error) {
@@ -284,14 +420,14 @@
 
         async function deleteTask(id) {
             if (!confirm('Удалить задачу?')) return;
-            
+
             try {
                 const response = await fetch(`${API_URL}/delete/${id}`, {
                     method: 'DELETE'
                 });
-                
+
                 if (!response.ok) throw new Error('Ошибка удаления задачи');
-                
+
                 showSuccess('Задача удалена');
                 await loadTasks();
             } catch (error) {
@@ -301,52 +437,83 @@
 
         function filterTasks(filter) {
             currentFilter = filter;
-            
+
             // Обновляем активную кнопку
             document.querySelectorAll('.filters button').forEach(btn => {
                 btn.classList.remove('active');
             });
             event.target.classList.add('active');
-            
+
             renderTasks();
         }
 
         function renderTasks() {
             const taskList = document.getElementById('taskList');
-            
+
             let filteredTasks = tasks;
             if (currentFilter === 'active') {
                 filteredTasks = tasks.filter(t => !t.complete);
             } else if (currentFilter === 'completed') {
                 filteredTasks = tasks.filter(t => t.complete);
             }
-            
+
             if (filteredTasks.length === 0) {
                 taskList.innerHTML = '<div class="empty-state">Нет задач</div>';
                 return;
             }
-            
+
             taskList.innerHTML = filteredTasks.map(task => `
-                <li class="task-item ${task.complete ? 'completed' : ''}">
+                <li class="task-item ${task.complete ? 'completed' : ''}" onclick="showTaskDetails(${task.id})">
                     <input 
                         type="checkbox" 
                         class="task-checkbox" 
                         ${task.complete ? 'checked' : ''}
                         ${task.complete ? 'disabled' : ''}
-                        onchange="completeTask(${task.id}, ${task.complete})"
+                        onchange="event.stopPropagation(); completeTask(${task.id}, ${task.complete})"
                     />
                     <div class="task-info">
                         <div class="task-name">${escapeHtml(task.name)}</div>
                         <div class="task-dates">
-                            Создано: ${formatDate(task.createtime)}
-                            ${task.completeat ? ' | Завершено: ' + formatDate(task.completeat) : ''}
+                            Создано: ${formatDate(task.create_time)}
+                            ${task.complete_at ? ' | Завершено: ' + formatDate(task.complete_at) : ''}
                         </div>
                     </div>
                     <div class="task-actions">
-                        <button class="btn-delete" onclick="deleteTask(${task.id})">Удалить</button>
+                        <button class="btn-delete" onclick="event.stopPropagation(); deleteTask(${task.id})">Удалить</button>
                     </div>
                 </li>
             `).join('');
+        }
+
+        function showTaskDetails(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            document.getElementById('modalId').textContent = task.id;
+            document.getElementById('modalName').textContent = task.name;
+            document.getElementById('modalText').textContent = task.text || 'Нет описания';
+            document.getElementById('modalCreateTime').textContent = formatDate(task.create_time);
+            document.getElementById('modalStatus').textContent = task.complete ? '✅ Завершена' : '⏳ В процессе';
+
+            const completeAtField = document.getElementById('modalCompleteAtField');
+            if (task.complete_at) {
+                document.getElementById('modalCompleteAt').textContent = formatDate(task.complete_at);
+                completeAtField.style.display = 'block';
+            } else {
+                completeAtField.style.display = 'none';
+            }
+
+            document.getElementById('taskModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('taskModal').classList.remove('active');
+        }
+
+        function closeModalOnBackdrop(event) {
+            if (event.target.id === 'taskModal') {
+                closeModal();
+            }
         }
 
         function formatDate(dateString) {
@@ -386,4 +553,5 @@
         }
     </script>
 </body>
+
 </html>
