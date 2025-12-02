@@ -2,8 +2,8 @@ package models
 
 import (
 	"database/sql"
-	"time"
 	"fmt"
+	"time"
 )
 
 type Task struct {
@@ -15,6 +15,13 @@ type Task struct {
 	CompleteAt *time.Time `json:"complete_at"`
 }
 
+type User struct {
+	ID           int       `json:"id"`
+	Username     string    `json:"username"`
+	PasswordHash string    `json:"-"` // Не отправляем в JSON
+	CreatedAt    time.Time `json:"created_at"`
+}
+
 type TaskRepository struct {
 	DB *sql.DB
 }
@@ -24,7 +31,20 @@ func NewTaskRepository(db *sql.DB) *TaskRepository {
 }
 
 func (r *TaskRepository) CreateTable() error {
+	// Создать таблицу users
 	_, err := r.DB.Exec(`
+	CREATE TABLE IF NOT EXISTS users (
+		id SERIAL PRIMARY KEY,
+		username VARCHAR(50) UNIQUE NOT NULL,
+		password_hash VARCHAR(60) NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	)`)
+	if err != nil {
+		return err
+	}
+
+	// Создать таблицу tasks
+	_, err = r.DB.Exec(`
 	CREATE TABLE IF NOT EXISTS tasks (
 		id SERIAL PRIMARY KEY,
 		name VARCHAR(255) NOT NULL,
@@ -176,20 +196,20 @@ func (r *TaskRepository) DeleteTask(id int) error {
 }
 
 func (r *TaskRepository) CompleteTask(id int) error {
-    result, err := r.DB.Exec(`
+	result, err := r.DB.Exec(`
     UPDATE tasks 
     SET complete = TRUE,
     completeat = Now()
     WHERE id = $1 AND complete = FALSE`, id)
-    
-    if err != nil {
-        return err
-    }
-    
-    rows, _ := result.RowsAffected()
-    if rows == 0 {
-        return fmt.Errorf("task already completed or not found")
-    }
-    
-    return nil
+
+	if err != nil {
+		return err
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("task already completed or not found")
+	}
+
+	return nil
 }
