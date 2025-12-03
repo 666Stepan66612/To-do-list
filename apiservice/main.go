@@ -2,7 +2,7 @@ package main
 
 import (
 	"apiservice/client"
-	handlers "apiservice/handlersForDB"
+	"apiservice/handlers"
 	"apiservice/kafka"
 	"log"
 	"net/http"
