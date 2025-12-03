@@ -18,8 +18,13 @@ type Task struct {
 type User struct {
 	ID           int       `json:"id"`
 	Username     string    `json:"username"`
-	PasswordHash string    `json:"-"` // Не отправляем в JSON
+	PasswordHash string    `json:"password_hash,omitempty"`
 	CreatedAt    time.Time `json:"created_at"`
+}
+
+type CreateUserRequest struct{
+	Username     string `json:username`
+	PasswordHash string `json:password_hash`
 }
 
 type TaskRepository struct {
