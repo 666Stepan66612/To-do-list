@@ -1,6 +1,7 @@
 package main
 
 import (
+	"apiservice/middleware"
 	"apiservice/client"
 	"apiservice/handlers"
 	"apiservice/kafka"
@@ -33,8 +34,18 @@ func main() {
 
 	taskHandlers := handlers.NewTaskHandlers(dbClient, eventProducer)
 
+	//Без JWT
 	router := mux.NewRouter()
 
+	router.Use(corsMiddleware)
+
+	router.HandleFunc("/register", handlers.Register).Methods("POST", "OPTIONS")
+	router.HandleFunc("/login", handlers.Login).Methods("POST", "OPTIONS")
+
+	//C JWT
+	protected := router.PathPrefix("/").Subrouter()
+	protected.Use(middleware.AuthMiddleware)
+		
 	// Enable CORS
 	router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -51,15 +62,15 @@ func main() {
 		})
 	})
 
-	router.Path("/create").Methods("POST", "OPTIONS").HandlerFunc(taskHandlers.HandleCreateTask)
-	router.Path("/get").Methods("GET", "OPTIONS").Queries("complete", "true").HandlerFunc(taskHandlers.HandleGetCompletedTasks)
-	router.Path("/get").Methods("GET", "OPTIONS").Queries("complete", "false").HandlerFunc(taskHandlers.HandleGetUncompletedTasks)
-	router.Path("/get").Methods("GET", "OPTIONS").HandlerFunc(taskHandlers.HandleGetAllTasks)
-	router.Path("/tasks").Methods("GET", "OPTIONS").HandlerFunc(taskHandlers.HandleGetAllTasks)
-	router.Path("/delete/{id}").Methods("DELETE", "OPTIONS").HandlerFunc(taskHandlers.HandleDeleteTask)
-	router.Path("/complete/{id}").Methods("PUT", "POST", "OPTIONS").HandlerFunc(taskHandlers.HandleCompleteTask)
-	router.Path("/getbyid/{id}").Methods("GET", "OPTIONS").HandlerFunc(taskHandlers.HandleGetTasksByID)
-	router.Path("/getbyname/{name}").Methods("GET", "OPTIONS").HandlerFunc(taskHandlers.HandleGetTasksByName)
+	protected.Path("/create").Methods("POST", "OPTIONS").HandlerFunc(taskHandlers.HandleCreateTask)
+	protected.Path("/get").Methods("GET", "OPTIONS").Queries("complete", "true").HandlerFunc(taskHandlers.HandleGetCompletedTasks)
+	protected.Path("/get").Methods("GET", "OPTIONS").Queries("complete", "false").HandlerFunc(taskHandlers.HandleGetUncompletedTasks)
+	protected.Path("/get").Methods("GET", "OPTIONS").HandlerFunc(taskHandlers.HandleGetAllTasks)
+	protected.Path("/tasks").Methods("GET", "OPTIONS").HandlerFunc(taskHandlers.HandleGetAllTasks)
+	protected.Path("/delete/{id}").Methods("DELETE", "OPTIONS").HandlerFunc(taskHandlers.HandleDeleteTask)
+	protected.Path("/complete/{id}").Methods("PUT", "POST", "OPTIONS").HandlerFunc(taskHandlers.HandleCompleteTask)
+	protected.Path("/getbyid/{id}").Methods("GET", "OPTIONS").HandlerFunc(taskHandlers.HandleGetTasksByID)
+	protected.Path("/getbyname/{name}").Methods("GET", "OPTIONS").HandlerFunc(taskHandlers.HandleGetTasksByName)
 
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -71,4 +82,20 @@ func main() {
 		log.Fatal(err)
 	}
 
+}
+
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
