@@ -8,6 +8,7 @@ import (
 
 type Task struct {
 	ID         int        `json:"id"`
+	UserID     int        `json:"user_id"`
 	Name       string     `json:"name"`
 	Text       string     `json:"text"`
 	CreateTime time.Time  `json:"create_time"`
