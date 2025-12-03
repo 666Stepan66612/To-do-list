@@ -25,7 +25,7 @@ type User struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-type RegisterUserRequest struct {
+type RegisterRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
