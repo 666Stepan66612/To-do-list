@@ -89,9 +89,7 @@ The application consists of seven main services:
 │   └── main.go        # Consumes events and writes to log file
 ├── logs/              # Event logs (bind-mounted to host)
 │   └── events.log     # All task-related events with user info (JSON format)
-├── docker-compose.yaml # Service orchestration
-├── Makefile           # Convenient shortcuts for docker-compose
-└── README.md          # This file
+└── docker-compose.yaml # Service orchestration
 ```
 
 ## Data Model
@@ -252,44 +250,20 @@ cd To-do-list
 docker-compose up --build
 ```
 
-Or use the Makefile:
-```bash
-make up
-```
-
 3. Access the application:
    - **Web UI**: http://localhost:8080
    - **API**: http://localhost:8081
    - **Event Logs**: `./logs/events.log`
 
-### Makefile Commands
-
-```bash
-make up          # Start all services
-make down        # Stop all services
-make restart     # Restart all services
-make logs        # View logs from all services
-make logs-api    # View API service logs
-make logs-db     # View DB service logs
-make logs-kafka  # View Kafka consumer logs
-make ps          # Show running containers
-make clean       # Stop and remove all containers, networks, volumes
-make rebuild     # Rebuild and restart all services
-```
-
 ### Stopping the Application
 
 ```bash
 docker-compose down
-# or
-make down
 ```
 
 To remove volumes as well:
 ```bash
 docker-compose down -v
-# or
-make clean
 ```
 
 ## Service Communication
