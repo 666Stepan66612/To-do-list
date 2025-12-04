@@ -52,6 +52,10 @@ services:
         condition: service_healthy
     environment:
       - WAIT_HOSTS=postgres:5432
+      - DB_HOST=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=mypostgres
+      - DB_NAME=postgres
 
   api-service:
     build:

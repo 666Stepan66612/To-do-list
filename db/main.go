@@ -62,23 +62,18 @@ func main() {
 	}
 	defer db.Close()
 
-	// Применяем миграции
 	if err := runMigrations(db); err != nil {
 		log.Fatal("Failed to run migrations:", err)
 	}
 
-	// Инициализируем репозиторий и хендлеры
 	repo := models.NewTaskRepository(db)
 	taskHandlers := handlers.NewTaskHandlers(repo)
 
-	// Создаём роутер
 	router := mux.NewRouter()
 
-	// Роуты для пользователей
 	router.HandleFunc("/user/create", handlers.CreateUser(db)).Methods("POST")
 	router.HandleFunc("/user/{username}", handlers.GetUserByUsername(db)).Methods("GET")
 
-	// Роуты для задач
 	router.Path("/create").Methods("POST").HandlerFunc(taskHandlers.HandleCreate)
 	router.Path("/get").Methods("GET").Queries("complete", "true").HandlerFunc(taskHandlers.HandleGetCompleted)
 	router.Path("/get").Methods("GET").Queries("complete", "false").HandlerFunc(taskHandlers.HandleGetUncompleted)
@@ -94,7 +89,7 @@ func main() {
 }
 
 func runMigrations(db *sql.DB) error {
-	// 1. Создаём таблицу users (сначала, т.к. tasks ссылается на неё)
+	//Создаём таблицу users (сначала, т.к. tasks ссылается на неё)
 	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS users (
 			id SERIAL PRIMARY KEY,
@@ -107,7 +102,7 @@ func runMigrations(db *sql.DB) error {
 		return fmt.Errorf("failed to create users table: %w", err)
 	}
 
-	// 2. Создаём таблицу tasks
+	//Создаём таблицу tasks
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS tasks (
 			id SERIAL PRIMARY KEY,
@@ -122,7 +117,7 @@ func runMigrations(db *sql.DB) error {
 		return fmt.Errorf("failed to create tasks table: %w", err)
 	}
 
-	// 3. Добавляем колонку user_id (если её нет)
+	//Добавляем колонку user_id (если её нет)
 	_, err = db.Exec(`
 		DO $$ 
 		BEGIN
@@ -138,7 +133,7 @@ func runMigrations(db *sql.DB) error {
 		return fmt.Errorf("failed to add user_id column: %w", err)
 	}
 
-	// 4. Создаём индекс для быстрого поиска задач по user_id
+	//Создаём индекс для быстрого поиска задач по user_id
 	_, err = db.Exec(`
 		CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
 	`)
