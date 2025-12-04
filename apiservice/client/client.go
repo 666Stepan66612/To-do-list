@@ -20,13 +20,14 @@ func NewDBClient(baseURL string) *DBClient {
 	}
 }
 
-func (c *DBClient) CreateTask(task *models.CreateTaskRequest) (*models.Task, error) {
+func (c *DBClient) CreateTask(task *models.CreateTaskRequest, userID int) (*models.Task, error) {
 	jsonData, err := json.Marshal(task)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.Client.Post(c.BaseURL+"/create", "application/json", bytes.NewBuffer(jsonData))
+	url := c.BaseURL + "/create?user_id=" + strconv.Itoa(userID)
+	resp, err := c.Client.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}
@@ -40,8 +41,8 @@ func (c *DBClient) CreateTask(task *models.CreateTaskRequest) (*models.Task, err
 	return &createdTask, nil
 }
 
-func (c *DBClient) GetAllTasks() ([]models.Task, error) {
-	resp, err := c.Client.Get(c.BaseURL + "/get")
+func (c *DBClient) GetAllTasks(userID int) ([]models.Task, error) {
+	resp, err := c.Client.Get(c.BaseURL + "/get?user_id=" + strconv.Itoa(userID))
 
 	if err != nil {
 		return nil, err
@@ -56,8 +57,8 @@ func (c *DBClient) GetAllTasks() ([]models.Task, error) {
 	return tasks, nil
 }
 
-func (c *DBClient) GetCompleted() ([]models.Task, error) {
-	resp, err := c.Client.Get(c.BaseURL + "/get?complete=true")
+func (c *DBClient) GetCompleted(userID int) ([]models.Task, error) {
+	resp, err := c.Client.Get(c.BaseURL + "/get?complete=true&user_id=" + strconv.Itoa(userID))
 
 	if err != nil {
 		return nil, err
@@ -72,8 +73,8 @@ func (c *DBClient) GetCompleted() ([]models.Task, error) {
 	return tasks, nil
 }
 
-func (c *DBClient) GetUncompleted() ([]models.Task, error) {
-	resp, err := c.Client.Get(c.BaseURL + "/get?complete=false")
+func (c *DBClient) GetUncompleted(userID int) ([]models.Task, error) {
+	resp, err := c.Client.Get(c.BaseURL + "/get?complete=false&user_id=" + strconv.Itoa(userID))
 
 	if err != nil {
 		return nil, err
@@ -88,9 +89,9 @@ func (c *DBClient) GetUncompleted() ([]models.Task, error) {
 	return tasks, nil
 }
 
-func (c *DBClient) DeleteTask(id int) error {
+func (c *DBClient) DeleteTask(id, userID int) error {
 	idStr := strconv.Itoa(id)
-	url := c.BaseURL + "/delete/" + idStr
+	url := c.BaseURL + "/delete/" + idStr + "?user_id=" + strconv.Itoa(userID)
 
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
@@ -107,9 +108,9 @@ func (c *DBClient) DeleteTask(id int) error {
 	return nil
 }
 
-func (c *DBClient) CompleteTask(id int) error {
+func (c *DBClient) CompleteTask(id, userID int) error {
 	idStr := strconv.Itoa(id)
-	url := c.BaseURL + "/complete/" + idStr
+	url := c.BaseURL + "/complete/" + idStr + "?user_id=" + strconv.Itoa(userID)
 
 	req, err := http.NewRequest("PUT", url, nil)
 	if err != nil {

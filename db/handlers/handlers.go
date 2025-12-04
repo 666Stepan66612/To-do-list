@@ -18,6 +18,18 @@ func NewTaskHandlers(repo *models.TaskRepository) *TaskHandlers {
 }
 
 func (h *TaskHandlers) HandleCreate(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.URL.Query().Get("user_id")
+	if userIDStr == "" {
+		http.Error(w, `{"error": "user_id is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, `{"error": "Invalid user_id"}`, http.StatusBadRequest)
+		return
+	}
+
 	var task struct {
 		Name string `json:"name"`
 		Text string `json:"text"`
@@ -34,8 +46,9 @@ func (h *TaskHandlers) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	taskToCreate := &models.Task{
-		Name: task.Name,
-		Text: task.Text,
+		UserID: userID,
+		Name:   task.Name,
+		Text:   task.Text,
 	}
 
 	if err := h.Repo.CreateTask(taskToCreate); err != nil {
@@ -49,7 +62,19 @@ func (h *TaskHandlers) HandleCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandlers) HandleGetAll(w http.ResponseWriter, r *http.Request) {
-	tasks, err := h.Repo.GetAllTasks()
+	userIDStr := r.URL.Query().Get("user_id")
+	if userIDStr == "" {
+		http.Error(w, `{"error": "user_id is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, `{"error": "Invalid user_id"}`, http.StatusBadRequest)
+		return
+	}
+
+	tasks, err := h.Repo.GetAllTasksByUser(userID)
 
 	if err != nil {
 		http.Error(w, `{"error": "Failed to get tasks"}`, http.StatusInternalServerError)
@@ -62,7 +87,19 @@ func (h *TaskHandlers) HandleGetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandlers) HandleGetCompleted(w http.ResponseWriter, r *http.Request) {
-	tasks, err := h.Repo.GetCompletedTasks()
+	userIDStr := r.URL.Query().Get("user_id")
+	if userIDStr == "" {
+		http.Error(w, `{"error": "user_id is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, `{"error": "Invalid user_id"}`, http.StatusBadRequest)
+		return
+	}
+
+	tasks, err := h.Repo.GetCompletedTasksByUser(userID)
 
 	if err != nil {
 		http.Error(w, `{"error": "Failed to get tasks"}`, http.StatusInternalServerError)
@@ -75,7 +112,19 @@ func (h *TaskHandlers) HandleGetCompleted(w http.ResponseWriter, r *http.Request
 }
 
 func (h *TaskHandlers) HandleGetUncompleted(w http.ResponseWriter, r *http.Request) {
-	tasks, err := h.Repo.GetUncompletedTasks()
+	userIDStr := r.URL.Query().Get("user_id")
+	if userIDStr == "" {
+		http.Error(w, `{"error": "user_id is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, `{"error": "Invalid user_id"}`, http.StatusBadRequest)
+		return
+	}
+
+	tasks, err := h.Repo.GetUncompletedTasksByUser(userID)
 
 	if err != nil {
 		http.Error(w, `{"error": "Failed to get tasks"}`, http.StatusInternalServerError)
@@ -114,6 +163,18 @@ func (h *TaskHandlers) HandleGetByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandlers) HandleDelete(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.URL.Query().Get("user_id")
+	if userIDStr == "" {
+		http.Error(w, `{"error": "user_id is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, `{"error": "Invalid user_id"}`, http.StatusBadRequest)
+		return
+	}
+
 	vars := mux.Vars(r)["id"]
 
 	id, err := strconv.Atoi(vars)
@@ -122,12 +183,28 @@ func (h *TaskHandlers) HandleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Repo.DeleteTask(id)
+	err = h.Repo.DeleteTaskByUser(id, userID)
+	if err != nil {
+		http.Error(w, `{"error": "Failed to delete task"}`, http.StatusForbidden)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
 
 func (h *TaskHandlers) HandleComplete(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.URL.Query().Get("user_id")
+	if userIDStr == "" {
+		http.Error(w, `{"error": "user_id is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, `{"error": "Invalid user_id"}`, http.StatusBadRequest)
+		return
+	}
+
 	vars := mux.Vars(r)["id"]
 
 	id, err := strconv.Atoi(vars)
@@ -136,7 +213,11 @@ func (h *TaskHandlers) HandleComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Repo.CompleteTask(id)
+	err = h.Repo.CompleteTaskByUser(id, userID)
+	if err != nil {
+		http.Error(w, `{"error": "Failed to complete task"}`, http.StatusForbidden)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 }

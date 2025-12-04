@@ -23,7 +23,7 @@ type User struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-type CreateUserRequest struct{
+type CreateUserRequest struct {
 	Username     string `json:username`
 	PasswordHash string `json:password_hash`
 }

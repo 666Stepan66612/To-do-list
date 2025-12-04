@@ -3,6 +3,7 @@ package handlers
 import (
 	"apiservice/client"
 	"apiservice/kafka"
+	"apiservice/middleware"
 	"apiservice/models"
 	"encoding/json"
 	"fmt"
@@ -25,6 +26,12 @@ func NewTaskHandlers(dbClient *client.DBClient, eventProducer *kafka.EventProduc
 }
 
 func (h *TaskHandlers) HandleCreateTask(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetUserFromContext(r)
+	if claims == nil {
+		http.Error(w, `error: Unauthorized`, http.StatusUnauthorized)
+		return
+	}
+
 	var req models.CreateTaskRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `error: Invalid JSON`, http.StatusBadRequest)
@@ -36,7 +43,7 @@ func (h *TaskHandlers) HandleCreateTask(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	task, err := h.DBClient.CreateTask(&req)
+	task, err := h.DBClient.CreateTask(&req, claims.UserID)
 	if err != nil {
 		http.Error(w, `error: Failed to create task`, http.StatusInternalServerError)
 		h.EventProducer.SendEvent("CREATE_TASK", fmt.Sprintf("Failed to create task: %s", req.Name), "ERROR")
@@ -52,7 +59,13 @@ func (h *TaskHandlers) HandleCreateTask(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *TaskHandlers) HandleGetAllTasks(w http.ResponseWriter, r *http.Request) {
-	tasks, err := h.DBClient.GetAllTasks()
+	claims := middleware.GetUserFromContext(r)
+	if claims == nil {
+		http.Error(w, `error: Unauthorized`, http.StatusUnauthorized)
+		return
+	}
+
+	tasks, err := h.DBClient.GetAllTasks(claims.UserID)
 	if err != nil {
 		http.Error(w, `error: Failed to get tasks`, http.StatusInternalServerError)
 		return
@@ -64,6 +77,12 @@ func (h *TaskHandlers) HandleGetAllTasks(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *TaskHandlers) HandleDeleteTask(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetUserFromContext(r)
+	if claims == nil {
+		http.Error(w, `error: Unauthorized`, http.StatusUnauthorized)
+		return
+	}
+
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -71,7 +90,7 @@ func (h *TaskHandlers) HandleDeleteTask(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = h.DBClient.DeleteTask(id)
+	err = h.DBClient.DeleteTask(id, claims.UserID)
 	if err != nil {
 		http.Error(w, `{"error": "Failed to delete task"}`, http.StatusInternalServerError)
 		h.EventProducer.SendEvent("DELETE_TASK", fmt.Sprintf("Failed to delete task: id=%d", id), "ERROR")
@@ -87,6 +106,12 @@ func (h *TaskHandlers) HandleDeleteTask(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *TaskHandlers) HandleCompleteTask(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetUserFromContext(r)
+	if claims == nil {
+		http.Error(w, `error: Unauthorized`, http.StatusUnauthorized)
+		return
+	}
+
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -94,7 +119,7 @@ func (h *TaskHandlers) HandleCompleteTask(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	err = h.DBClient.CompleteTask(id)
+	err = h.DBClient.CompleteTask(id, claims.UserID)
 	if err != nil {
 		http.Error(w, `{"error": "Failed to complete task"}`, http.StatusInternalServerError)
 		h.EventProducer.SendEvent("COMPLETE_TASK", fmt.Sprintf("Failed to complete task: id=%d", id), "ERROR")
@@ -112,7 +137,13 @@ func (h *TaskHandlers) HandleCompleteTask(w http.ResponseWriter, r *http.Request
 }
 
 func (h *TaskHandlers) HandleGetCompletedTasks(w http.ResponseWriter, r *http.Request) {
-	tasks, err := h.DBClient.GetCompleted()
+	claims := middleware.GetUserFromContext(r)
+	if claims == nil {
+		http.Error(w, `error: Unauthorized`, http.StatusUnauthorized)
+		return
+	}
+
+	tasks, err := h.DBClient.GetCompleted(claims.UserID)
 	if err != nil {
 		http.Error(w, `error: Failed to get tasks`, http.StatusInternalServerError)
 		return
@@ -124,7 +155,13 @@ func (h *TaskHandlers) HandleGetCompletedTasks(w http.ResponseWriter, r *http.Re
 }
 
 func (h *TaskHandlers) HandleGetUncompletedTasks(w http.ResponseWriter, r *http.Request) {
-	tasks, err := h.DBClient.GetUncompleted()
+	claims := middleware.GetUserFromContext(r)
+	if claims == nil {
+		http.Error(w, `error: Unauthorized`, http.StatusUnauthorized)
+		return
+	}
+
+	tasks, err := h.DBClient.GetUncompleted(claims.UserID)
 	if err != nil {
 		http.Error(w, `error: Failed to get tasks`, http.StatusInternalServerError)
 		return

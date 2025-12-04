@@ -1,10 +1,10 @@
 package main
 
 import (
-	"apiservice/middleware"
 	"apiservice/client"
 	"apiservice/handlers"
 	"apiservice/kafka"
+	"apiservice/middleware"
 	"log"
 	"net/http"
 	"os"
@@ -45,7 +45,7 @@ func main() {
 	//C JWT
 	protected := router.PathPrefix("/").Subrouter()
 	protected.Use(middleware.AuthMiddleware)
-		
+
 	// Enable CORS
 	router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +83,6 @@ func main() {
 	}
 
 }
-
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
