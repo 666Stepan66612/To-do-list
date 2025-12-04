@@ -64,16 +64,45 @@ func (r *TaskRepository) CreateTable() error {
 
 func (r *TaskRepository) CreateTask(task *Task) error {
 	return r.DB.QueryRow(`
-	INSERT INTO tasks (name, text, complete, createtime) 
-	VALUES ($1, $2, FALSE, Now()) 
-	RETURNING id, name, text, complete, createtime, completeat`,
-		task.Name, task.Text).Scan(
+	INSERT INTO tasks (user_id, name, text, complete, create_time) 
+	VALUES ($1, $2, $3, FALSE, Now()) 
+	RETURNING id, user_id, name, text, complete, create_time, complete_at`,
+		task.UserID, task.Name, task.Text).Scan(
 		&task.ID,
+		&task.UserID,
 		&task.Name,
 		&task.Text,
 		&task.Complete,
 		&task.CreateTime,
 		&task.CompleteAt)
+}
+
+func (r *TaskRepository) GetAllTasksByUser(userID int) ([]Task, error) {
+	rows, err := r.DB.Query(`
+	SELECT id, user_id, name, text, complete, create_time, complete_at FROM tasks
+	WHERE user_id = $1
+	ORDER BY create_time DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []Task
+	for rows.Next() {
+		var task Task
+		if err := rows.Scan(
+			&task.ID,
+			&task.UserID,
+			&task.Name,
+			&task.Text,
+			&task.Complete,
+			&task.CreateTime,
+			&task.CompleteAt); err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks, nil
 }
 
 func (r *TaskRepository) GetAllTasks() ([]Task, error) {
@@ -102,6 +131,34 @@ func (r *TaskRepository) GetAllTasks() ([]Task, error) {
 	return tasks, nil
 }
 
+func (r *TaskRepository) GetCompletedTasksByUser(userID int) ([]Task, error) {
+	rows, err := r.DB.Query(`
+	SELECT id, user_id, name, text, complete, create_time, complete_at FROM tasks 
+	WHERE complete = TRUE AND user_id = $1
+	ORDER BY create_time DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []Task
+	for rows.Next() {
+		var task Task
+		if err := rows.Scan(
+			&task.ID,
+			&task.UserID,
+			&task.Name,
+			&task.Text,
+			&task.Complete,
+			&task.CreateTime,
+			&task.CompleteAt); err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks, nil
+}
+
 func (r *TaskRepository) GetCompletedTasks() ([]Task, error) {
 	rows, err := r.DB.Query(`
 	SELECT * FROM tasks 
@@ -117,6 +174,36 @@ func (r *TaskRepository) GetCompletedTasks() ([]Task, error) {
 		var task Task
 		if err := rows.Scan(
 			&task.ID,
+			&task.Name,
+			&task.Text,
+			&task.Complete,
+			&task.CreateTime,
+			&task.CompleteAt); err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks, nil
+}
+
+func (r *TaskRepository) GetUncompletedTasksByUser(userID int) ([]Task, error) {
+	rows, err := r.DB.Query(`
+	SELECT id, user_id, name, text, complete, create_time, complete_at FROM tasks
+	WHERE complete = FALSE AND user_id = $1
+	ORDER BY create_time DESC`, userID)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []Task
+
+	for rows.Next() {
+		var task Task
+		if err := rows.Scan(
+			&task.ID,
+			&task.UserID,
 			&task.Name,
 			&task.Text,
 			&task.Complete,
@@ -196,9 +283,40 @@ func (r *TaskRepository) GetIDByName(name string) (*Task, error) {
 	return &task, nil
 }
 
+func (r *TaskRepository) DeleteTaskByUser(id, userID int) error {
+	result, err := r.DB.Exec(`DELETE FROM tasks WHERE id = $1 AND user_id = $2`, id, userID)
+	if err != nil {
+		return err
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("task not found or access denied")
+	}
+	return nil
+}
+
 func (r *TaskRepository) DeleteTask(id int) error {
 	_, err := r.DB.Exec(`DELETE FROM tasks WHERE id = $1`, id)
 	return err
+}
+
+func (r *TaskRepository) CompleteTaskByUser(id, userID int) error {
+	result, err := r.DB.Exec(`
+    UPDATE tasks 
+    SET complete = TRUE,
+    complete_at = Now()
+    WHERE id = $1 AND user_id = $2 AND complete = FALSE`, id, userID)
+
+	if err != nil {
+		return err
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("task already completed, not found, or access denied")
+	}
+
+	return nil
 }
 
 func (r *TaskRepository) CompleteTask(id int) error {

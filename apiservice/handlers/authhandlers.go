@@ -1,15 +1,16 @@
 package handlers
 
 import (
-    "apiservice/auth"
-    "apiservice/models"
-    "bytes"
-    "encoding/json"
-    "net/http"
+	"apiservice/auth"
+	"apiservice/models"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
 )
 
-//Регистрируемся
-func Register(w http.ResponseWriter, r *http.Request){
+// Регистрируемся
+func Register(w http.ResponseWriter, r *http.Request) {
 	var req models.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "error: Invalid JSON", http.StatusBadRequest)
@@ -41,15 +42,20 @@ func Register(w http.ResponseWriter, r *http.Request){
 
 	//Отправляем в db
 	createUserReq := map[string]string{
-		"username": req.Username,
+		"username":      req.Username,
 		"password_hash": hashedPassword,
 	}
 
 	jsonData, err := json.Marshal(createUserReq)
+	if err != nil {
+		http.Error(w, "error: Failed to marshal request", http.StatusInternalServerError)
+		return
+	}
+
 	resp, err := http.Post(
-		"http://dbservice:8081/users",
+		"http://db-service:8080/user/create",
 		"application/json",
-		 bytes.NewBuffer(jsonData),
+		bytes.NewBuffer(jsonData),
 	)
 
 	if err != nil {
@@ -58,8 +64,14 @@ func Register(w http.ResponseWriter, r *http.Request){
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusConflict {
+	if resp.StatusCode == http.StatusConflict {
 		http.Error(w, "Username already exists", http.StatusConflict)
+		return
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		return
 	}
 
 	//Получаем созданного юзера
@@ -86,8 +98,8 @@ func Register(w http.ResponseWriter, r *http.Request){
 	})
 }
 
-//Логинимся
-func Login(w http.ResponseWriter, r *http.Request){
+// Логинимся
+func Login(w http.ResponseWriter, r *http.Request) {
 	var req models.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `Invalid request body`, http.StatusBadRequest)
@@ -101,7 +113,7 @@ func Login(w http.ResponseWriter, r *http.Request){
 	}
 
 	//Получаем юзера из db
-	resp, err := http.Get("http://dbservice:8080/users/%s" + req.Username)
+	resp, err := http.Get(fmt.Sprintf("http://db-service:8080/user/%s", req.Username))
 	if err != nil {
 		http.Error(w, "Failed to get user", http.StatusInternalServerError)
 		return
