@@ -15,11 +15,11 @@ type EventProducer struct {
 
 type Event struct {
 	Timestamp string `json:"timestamp"`
-    UserID    int    `json:"user_id"`
-    Username  string `json:"username"`
-    Action    string `json:"action"`
-    Details   string `json:"details"`
-    Status    string `json:"status"`
+	UserID    int    `json:"user_id"`
+	Username  string `json:"username"`
+	Action    string `json:"action"`
+	Details   string `json:"details"`
+	Status    string `json:"status"`
 }
 
 func NewEventProducer(brokers []string, topic string) (*EventProducer, error) {
@@ -40,18 +40,18 @@ func NewEventProducer(brokers []string, topic string) (*EventProducer, error) {
 }
 
 func (ep *EventProducer) SendEvent(userID int, username, action, details, status string) error {
-	if ep == nil {
+	if ep == nil || ep.producer == nil {
 		// Silently skip if producer is not initialized
 		return nil
 	}
 
 	event := Event{
 		Timestamp: time.Now().Format(time.RFC3339),
-        UserID:    userID,
-        Username:  username,
-        Action:    action,
-        Details:   details,
-        Status:    status,
+		UserID:    userID,
+		Username:  username,
+		Action:    action,
+		Details:   details,
+		Status:    status,
 	}
 
 	eventJSON, err := json.Marshal(event)

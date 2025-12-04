@@ -3,6 +3,8 @@ package auth
 import (
 	"testing"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // ============================================================================
@@ -440,5 +442,213 @@ func TestCheckPasswordCaseSensitive(t *testing.T) {
 	err := CheckPassword("mypassword123", hash)
 	if err == nil {
 		t.Error("CheckPassword() должен быть чувствителен к регистру")
+	}
+}
+
+func TestValidateTokenWithInvalidSigningMethod(t *testing.T) {
+	// Создаем токен с другим методом подписи (RS256 вместо HS256)
+	claims := &Claims{
+		UserID:   1,
+		Username: "test",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	// Используем неправильный метод подписи
+	token := jwt.NewWithClaims(jwt.SigningMethodNone, claims)
+	tokenString, _ := token.SignedString(jwt.UnsafeAllowNoneSignatureType)
+
+	_, err := ValidateToken(tokenString)
+	if err == nil {
+		t.Error("ValidateToken() должен отклонить токен с неправильным методом подписи")
+	}
+}
+
+func TestHashPasswordWithSpecialCharacters(t *testing.T) {
+	passwords := []string{
+		"!@#$%^&*()",
+		"pass<>word",
+		"pass\"word",
+		"pass'word",
+		"pass\nword",
+		"pass\tword",
+	}
+
+	for _, pwd := range passwords {
+		hash, err := HashPassword(pwd)
+		if err != nil {
+			t.Errorf("HashPassword() не смог хешировать пароль со спецсимволами %q: %v", pwd, err)
+		}
+
+		if err := CheckPassword(pwd, hash); err != nil {
+			t.Errorf("CheckPassword() не смог проверить пароль со спецсимволами %q: %v", pwd, err)
+		}
+	}
+}
+
+func TestGenerateTokenWithVeryLongUsername(t *testing.T) {
+	longUsername := string(make([]byte, 10000))
+	for i := range longUsername {
+		longUsername = longUsername[:i] + "a" + longUsername[i:]
+	}
+	longUsername = longUsername[:10000]
+
+	token, err := GenerateToken(1, longUsername[:10000])
+	if err != nil {
+		t.Errorf("GenerateToken() не смог создать токен с длинным username: %v", err)
+	}
+
+	if token == "" {
+		t.Error("GenerateToken() вернул пустой токен")
+	}
+}
+
+func TestValidateTokenClaimsExtraction(t *testing.T) {
+	userID := 42
+	username := "testuser"
+
+	token, err := GenerateToken(userID, username)
+	if err != nil {
+		t.Fatalf("Не удалось создать токен: %v", err)
+	}
+
+	claims, err := ValidateToken(token)
+	if err != nil {
+		t.Fatalf("ValidateToken() вернул ошибку: %v", err)
+	}
+
+	if claims.UserID != userID {
+		t.Errorf("UserID не совпадает: получено %d, ожидается %d", claims.UserID, userID)
+	}
+
+	if claims.Username != username {
+		t.Errorf("Username не совпадает: получено %s, ожидается %s", claims.Username, username)
+	}
+
+	if claims.ExpiresAt == nil {
+		t.Error("ExpiresAt не установлен")
+	}
+
+	if claims.IssuedAt == nil {
+		t.Error("IssuedAt не установлен")
+	}
+}
+
+func TestHashPasswordConsistency(t *testing.T) {
+	password := "testpass"
+
+	hash1, err1 := HashPassword(password)
+	hash2, err2 := HashPassword(password)
+
+	if err1 != nil || err2 != nil {
+		t.Fatalf("Ошибка хеширования: %v, %v", err1, err2)
+	}
+
+	// Хеши должны быть разными (bcrypt использует соль)
+	if hash1 == hash2 {
+		t.Error("Хеши одинаковы, должны отличаться из-за соли")
+	}
+
+	// Но оба должны проходить проверку
+	if err := CheckPassword(password, hash1); err != nil {
+		t.Errorf("CheckPassword не прошла для hash1: %v", err)
+	}
+
+	if err := CheckPassword(password, hash2); err != nil {
+		t.Errorf("CheckPassword не прошла для hash2: %v", err)
+	}
+}
+
+func TestCheckPasswordWithDifferentPasswords(t *testing.T) {
+	password1 := "password1"
+	password2 := "password2"
+
+	hash1, _ := HashPassword(password1)
+
+	// Проверка правильного пароля
+	if err := CheckPassword(password1, hash1); err != nil {
+		t.Error("CheckPassword должна пройти для правильного пароля")
+	}
+
+	// Проверка неправильного пароля
+	if err := CheckPassword(password2, hash1); err == nil {
+		t.Error("CheckPassword должна вернуть ошибку для неправильного пароля")
+	}
+}
+
+func TestGenerateTokenWithEmptyStrings(t *testing.T) {
+	token, err := GenerateToken(0, "")
+	if err != nil {
+		t.Fatalf("GenerateToken не смог создать токен: %v", err)
+	}
+
+	if token == "" {
+		t.Error("Token не должен быть пустым")
+	}
+
+	claims, err := ValidateToken(token)
+	if err != nil {
+		t.Fatalf("ValidateToken вернул ошибку: %v", err)
+	}
+
+	if claims.Username != "" {
+		t.Errorf("Username должен быть пустым, получено: %s", claims.Username)
+	}
+}
+
+func TestValidateTokenWithManipulatedClaims(t *testing.T) {
+	// Создаем валидный токен
+	token, _ := GenerateToken(1, "user")
+
+	// Пытаемся изменить токен (добавляем символ)
+	manipulated := token + "x"
+
+	_, err := ValidateToken(manipulated)
+	if err == nil {
+		t.Error("ValidateToken должен отклонить измененный токен")
+	}
+}
+
+func TestCheckPasswordEmptyPassword(t *testing.T) {
+	hash, err := HashPassword("validpassword")
+	if err != nil {
+		t.Fatalf("Не удалось создать хеш: %v", err)
+	}
+
+	err = CheckPassword("", hash)
+	if err == nil {
+		t.Error("CheckPassword должен вернуть ошибку для пустого пароля")
+	}
+}
+
+func TestValidateTokenExpired(t *testing.T) {
+	// Создаем токен с истекшим временем
+	claims := &Claims{
+		UserID:   1,
+		Username: "testuser",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-24 * time.Hour)), // истек вчера
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, _ := token.SignedString(jwtSecret)
+
+	_, err := ValidateToken(tokenString)
+	if err == nil {
+		t.Error("ValidateToken должен отклонить истекший токен")
+	}
+}
+
+func TestValidateTokenWithWrongClaimsType(t *testing.T) {
+	// Создаем невалидный токен с правильным форматом но неправильными данными
+	// Токен в формате header.payload.signature но с пустым payload
+	invalidToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.invalid"
+
+	_, err := ValidateToken(invalidToken)
+	if err == nil {
+		t.Error("ValidateToken должен вернуть ошибку для невалидного токена")
 	}
 }

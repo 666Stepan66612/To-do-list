@@ -1,0 +1,15 @@
+mode: set
+apiservice/auth/auth.go:22.52,24.16 2 1
+apiservice/auth/auth.go:24.16,26.3 1 1
+apiservice/auth/auth.go:27.2,27.33 1 1
+apiservice/auth/auth.go:31.49,33.2 1 1
+apiservice/auth/auth.go:34.65,45.2 3 1
+apiservice/auth/auth.go:47.57,48.104 1 1
+apiservice/auth/auth.go:48.104,49.58 1 1
+apiservice/auth/auth.go:49.58,51.4 1 1
+apiservice/auth/auth.go:52.3,52.24 1 1
+apiservice/auth/auth.go:55.2,55.16 1 1
+apiservice/auth/auth.go:55.16,57.3 1 1
+apiservice/auth/auth.go:59.2,59.61 1 1
+apiservice/auth/auth.go:59.61,61.3 1 1
+apiservice/auth/auth.go:63.2,63.41 1 0

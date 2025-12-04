@@ -2,9 +2,67 @@ package kafka
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
+
+	"github.com/IBM/sarama"
 )
+
+// ============================================================================
+// MOCK SARAMA PRODUCER
+// ============================================================================
+
+type MockSyncProducer struct {
+	sendMessageFunc func(*sarama.ProducerMessage) (partition int32, offset int64, err error)
+	closeFunc       func() error
+}
+
+func (m *MockSyncProducer) SendMessage(msg *sarama.ProducerMessage) (partition int32, offset int64, err error) {
+	if m.sendMessageFunc != nil {
+		return m.sendMessageFunc(msg)
+	}
+	return 0, 0, nil
+}
+
+func (m *MockSyncProducer) SendMessages(msgs []*sarama.ProducerMessage) error {
+	return nil
+}
+
+func (m *MockSyncProducer) Close() error {
+	if m.closeFunc != nil {
+		return m.closeFunc()
+	}
+	return nil
+}
+
+func (m *MockSyncProducer) TxnStatus() sarama.ProducerTxnStatusFlag {
+	return 0
+}
+
+func (m *MockSyncProducer) IsTransactional() bool {
+	return false
+}
+
+func (m *MockSyncProducer) BeginTxn() error {
+	return nil
+}
+
+func (m *MockSyncProducer) CommitTxn() error {
+	return nil
+}
+
+func (m *MockSyncProducer) AbortTxn() error {
+	return nil
+}
+
+func (m *MockSyncProducer) AddOffsetsToTxn(offsets map[string][]*sarama.PartitionOffsetMetadata, groupId string) error {
+	return nil
+}
+
+func (m *MockSyncProducer) AddMessageToTxn(msg *sarama.ConsumerMessage, groupId string, metadata *string) error {
+	return nil
+}
 
 // ============================================================================
 // ТЕСТЫ ДЛЯ Event СТРУКТУРЫ
@@ -93,15 +151,11 @@ func TestSendEventEmptyProducer(t *testing.T) {
 		topic:    "test-topic",
 	}
 
-	// Должен упасть с panic при попытке отправки (nil pointer dereference)
-	// Проверяем, что такая ситуация обрабатывается
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("SendEvent() с nil producer внутри структуры должен вызвать panic")
-		}
-	}()
-
-	_ = ep.SendEvent(1, "testuser", "TEST_ACTION", "details", "SUCCESS")
+	// После исправления должен возвращать nil, а не паниковать
+	err := ep.SendEvent(1, "testuser", "TEST_ACTION", "details", "SUCCESS")
+	if err != nil {
+		t.Errorf("SendEvent() с nil producer должен возвращать nil, получено: %v", err)
+	}
 }
 
 // ============================================================================
@@ -512,5 +566,310 @@ func TestEventWithSpecialJSONCharacters(t *testing.T) {
 	}
 	if decoded.Details != event.Details {
 		t.Errorf("Details со спецсимволами не совпадают: получено %s, ожидается %s", decoded.Details, event.Details)
+	}
+}
+
+// ============================================================================
+// ДОПОЛНИТЕЛЬНЫЕ ТЕСТЫ ДЛЯ ПОКРЫТИЯ
+// ============================================================================
+
+func TestSendEventWithVariousUserIDs(t *testing.T) {
+	tests := []struct {
+		name     string
+		userID   int
+		username string
+		action   string
+		details  string
+		status   string
+	}{
+		{"Positive UserID", 42, "user42", "TEST", "details", "SUCCESS"},
+		{"Zero UserID", 0, "guest", "LOGIN", "guest login", "SUCCESS"},
+		{"Negative UserID", -1, "invalid", "ERROR", "error occurred", "ERROR"},
+		{"Large UserID", 999999999, "vip", "PREMIUM", "premium action", "SUCCESS"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var ep *EventProducer = nil
+
+			err := ep.SendEvent(tt.userID, tt.username, tt.action, tt.details, tt.status)
+			if err != nil {
+				t.Errorf("SendEvent() вернул ошибку для %s: %v", tt.name, err)
+			}
+		})
+	}
+}
+
+func TestEventWithEmptyUsername(t *testing.T) {
+	event := Event{
+		Timestamp: "2024-12-04T10:00:00Z",
+		UserID:    1,
+		Username:  "",
+		Action:    "TEST",
+		Details:   "details",
+		Status:    "SUCCESS",
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		t.Fatalf("Не удалось сериализовать Event с пустым username: %v", err)
+	}
+
+	var decoded Event
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Не удалось десериализовать Event: %v", err)
+	}
+
+	if decoded.Username != "" {
+		t.Errorf("Username должен быть пустым, получено: %s", decoded.Username)
+	}
+}
+
+func TestEventWithEmptyAction(t *testing.T) {
+	event := Event{
+		Timestamp: "2024-12-04T10:00:00Z",
+		UserID:    1,
+		Username:  "user",
+		Action:    "",
+		Details:   "details",
+		Status:    "SUCCESS",
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		t.Fatalf("Не удалось сериализовать Event с пустым action: %v", err)
+	}
+
+	var decoded Event
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Не удалось десериализовать Event: %v", err)
+	}
+
+	if decoded.Action != "" {
+		t.Errorf("Action должен быть пустым, получено: %s", decoded.Action)
+	}
+}
+
+func TestEventWithMaxValues(t *testing.T) {
+	event := Event{
+		Timestamp: "2024-12-04T10:00:00Z",
+		UserID:    2147483647, // max int32
+		Username:  "maxuser",
+		Action:    "MAX_TEST",
+		Details:   "max values test",
+		Status:    "SUCCESS",
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		t.Fatalf("Не удалось сериализовать Event с максимальными значениями: %v", err)
+	}
+
+	var decoded Event
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Не удалось десериализовать Event: %v", err)
+	}
+
+	if decoded.UserID != event.UserID {
+		t.Errorf("UserID не совпадает: получено %d, ожидается %d", decoded.UserID, event.UserID)
+	}
+}
+
+func TestEventWithMultilineDetails(t *testing.T) {
+	event := Event{
+		Timestamp: "2024-12-04T10:00:00Z",
+		UserID:    1,
+		Username:  "user",
+		Action:    "TEST",
+		Details:   "line1\nline2\nline3",
+		Status:    "SUCCESS",
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		t.Fatalf("Не удалось сериализовать Event с многострочными details: %v", err)
+	}
+
+	var decoded Event
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Не удалось десериализовать Event: %v", err)
+	}
+
+	if decoded.Details != event.Details {
+		t.Errorf("Details не совпадают: получено %s, ожидается %s", decoded.Details, event.Details)
+	}
+}
+
+func TestEventWithTabsInDetails(t *testing.T) {
+	event := Event{
+		Timestamp: "2024-12-04T10:00:00Z",
+		UserID:    1,
+		Username:  "user",
+		Action:    "TEST",
+		Details:   "field1\tfield2\tfield3",
+		Status:    "SUCCESS",
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		t.Fatalf("Не удалось сериализовать Event с табами: %v", err)
+	}
+
+	var decoded Event
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Не удалось десериализовать Event: %v", err)
+	}
+
+	if decoded.Details != event.Details {
+		t.Errorf("Details не совпадают: получено %s, ожидается %s", decoded.Details, event.Details)
+	}
+}
+
+// ============================================================================
+// ТЕСТЫ ДЛЯ Close И LIFECYCLE
+// ============================================================================
+
+func TestCloseNilProducer(t *testing.T) {
+	// Тест для проверки Close с nil producer
+	ep := &EventProducer{
+		producer: nil,
+		topic:    "test-topic",
+	}
+
+	// Должен паниковать при попытке закрыть nil producer
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Close должен паниковать с nil producer")
+		}
+	}()
+
+	_ = ep.Close()
+}
+
+func TestSendEventWithRealProducer(t *testing.T) {
+	// Этот тест пропускается, так как требует реальный Kafka брокер
+	t.Skip("Пропускается: требует реальный Kafka")
+
+	// Код для теста с реальным продюсером
+	// ep, err := NewEventProducer([]string{"localhost:9092"}, "test-topic")
+	// if err != nil {
+	// 	t.Fatalf("Не удалось создать продюсер: %v", err)
+	// }
+	// defer ep.Close()
+
+	// err = ep.SendEvent(1, "testuser", "TEST_ACTION", "Test details", "SUCCESS")
+	// if err != nil {
+	// 	t.Errorf("SendEvent вернул ошибку: %v", err)
+	// }
+}
+
+// ============================================================================
+// ТЕСТЫ ДЛЯ NewEventProducer
+// ============================================================================
+
+func TestNewEventProducerError(t *testing.T) {
+	// Попытка создать продюсер с невалидными брокерами
+	_, err := NewEventProducer([]string{}, "test-topic")
+	if err == nil {
+		t.Error("NewEventProducer должен вернуть ошибку с пустым списком брокеров")
+	}
+}
+
+func TestNewEventProducerInvalidBroker(t *testing.T) {
+	// Попытка подключиться к несуществующему брокеру
+	// Этот тест может занять время из-за таймаутов
+	_, err := NewEventProducer([]string{"invalid:9999"}, "test-topic")
+	if err == nil {
+		t.Error("NewEventProducer должен вернуть ошибку с невалидным брокером")
+	}
+}
+
+func TestNewEventProducerConfiguration(t *testing.T) {
+	// Тестируем конфигурацию (без реального подключения)
+	// Используем заведомо неправильный адрес чтобы получить ошибку
+	_, err := NewEventProducer([]string{"localhost:1"}, "test-topic")
+	if err == nil {
+		t.Error("NewEventProducer должен вернуть ошибку при невозможности подключения")
+	}
+}
+
+// ============================================================================
+// ТЕСТЫ С MOCK PRODUCER
+// ============================================================================
+
+func TestSendEventWithMockSuccess(t *testing.T) {
+	mockProducer := &MockSyncProducer{
+		sendMessageFunc: func(msg *sarama.ProducerMessage) (int32, int64, error) {
+			return 0, 123, nil
+		},
+	}
+
+	ep := &EventProducer{
+		producer: mockProducer,
+		topic:    "test-topic",
+	}
+
+	err := ep.SendEvent(1, "testuser", "CREATE", "task created", "SUCCESS")
+	if err != nil {
+		t.Errorf("SendEvent не должен возвращать ошибку: %v", err)
+	}
+}
+
+func TestSendEventWithMockError(t *testing.T) {
+	mockProducer := &MockSyncProducer{
+		sendMessageFunc: func(msg *sarama.ProducerMessage) (int32, int64, error) {
+			return 0, 0, errors.New("kafka send error")
+		},
+	}
+
+	ep := &EventProducer{
+		producer: mockProducer,
+		topic:    "test-topic",
+	}
+
+	err := ep.SendEvent(1, "testuser", "CREATE", "task created", "SUCCESS")
+	if err == nil {
+		t.Error("SendEvent должен вернуть ошибку при неудаче отправки")
+	}
+}
+
+func TestCloseWithMock(t *testing.T) {
+	closed := false
+	mockProducer := &MockSyncProducer{
+		closeFunc: func() error {
+			closed = true
+			return nil
+		},
+	}
+
+	ep := &EventProducer{
+		producer: mockProducer,
+		topic:    "test-topic",
+	}
+
+	err := ep.Close()
+	if err != nil {
+		t.Errorf("Close не должен возвращать ошибку: %v", err)
+	}
+	if !closed {
+		t.Error("Close должен вызвать producer.Close()")
+	}
+}
+
+func TestCloseWithMockError(t *testing.T) {
+	mockProducer := &MockSyncProducer{
+		closeFunc: func() error {
+			return errors.New("close error")
+		},
+	}
+
+	ep := &EventProducer{
+		producer: mockProducer,
+		topic:    "test-topic",
+	}
+
+	err := ep.Close()
+	if err == nil {
+		t.Error("Close должен вернуть ошибку при неудаче закрытия")
 	}
 }

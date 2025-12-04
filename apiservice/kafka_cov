@@ -1,0 +1,12 @@
+mode: set
+apiservice/kafka/producer.go:25.79,32.16 6 1
+apiservice/kafka/producer.go:32.16,34.3 1 1
+apiservice/kafka/producer.go:36.2,39.8 1 0
+apiservice/kafka/producer.go:42.96,43.37 1 1
+apiservice/kafka/producer.go:43.37,46.3 1 1
+apiservice/kafka/producer.go:48.2,58.16 3 0
+apiservice/kafka/producer.go:58.16,61.3 2 0
+apiservice/kafka/producer.go:63.2,69.16 3 0
+apiservice/kafka/producer.go:69.16,72.3 2 0
+apiservice/kafka/producer.go:74.2,75.12 2 0
+apiservice/kafka/producer.go:78.40,80.2 1 1

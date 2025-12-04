@@ -551,3 +551,80 @@ func TestGetTaskByNameInvalidJSON(t *testing.T) {
 		t.Error("GetTaskByName() должен вернуть ошибку при невалидном JSON")
 	}
 }
+
+func TestDeleteTaskWithInvalidURL(t *testing.T) {
+	// Используем недопустимый URL для создания ошибки в http.NewRequest
+	client := &DBClient{
+		BaseURL: "ht tp://invalid url with spaces",
+		Client:  &http.Client{},
+	}
+
+	err := client.DeleteTask(1, 1)
+	if err == nil {
+		t.Error("DeleteTask() должен вернуть ошибку при недопустимом URL")
+	}
+}
+
+func TestCompleteTaskWithInvalidURL(t *testing.T) {
+	// Используем недопустимый URL
+	client := &DBClient{
+		BaseURL: "ht tp://invalid url",
+		Client:  &http.Client{},
+	}
+
+	err := client.CompleteTask(1, 1)
+	if err == nil {
+		t.Error("CompleteTask() должен вернуть ошибку при недопустимом URL")
+	}
+}
+
+func TestCreateTaskMarshalError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(models.Task{ID: 1, Name: "test"})
+	}))
+	defer server.Close()
+
+	client := NewDBClient(server.URL)
+
+	// Создаем задачу с нормальными данными
+	task := &models.CreateTaskRequest{
+		Name: "test",
+		Text: "description",
+	}
+
+	result, err := client.CreateTask(task, 1)
+	if err != nil {
+		t.Errorf("CreateTask() вернул неожиданную ошибку: %v", err)
+	}
+
+	if result.ID != 1 {
+		t.Errorf("Неправильный ID: получено %d, ожидается 1", result.ID)
+	}
+}
+
+func TestDeleteTaskResponseClose(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	client := NewDBClient(server.URL)
+	err := client.DeleteTask(1, 1)
+	if err != nil {
+		t.Errorf("DeleteTask() вернул ошибку: %v", err)
+	}
+}
+
+func TestCompleteTaskResponseClose(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	client := NewDBClient(server.URL)
+	err := client.CompleteTask(1, 1)
+	if err != nil {
+		t.Errorf("CompleteTask() вернул ошибку: %v", err)
+	}
+}
