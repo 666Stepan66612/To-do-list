@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"apiservice/client"
-	"apiservice/kafka"
 	"apiservice/middleware"
 	"apiservice/models"
 	"encoding/json"
@@ -14,11 +12,11 @@ import (
 )
 
 type TaskHandlers struct {
-	DBClient      *client.DBClient
-	EventProducer *kafka.EventProducer
+	DBClient      DBClientInterface
+	EventProducer EventProducerInterface
 }
 
-func NewTaskHandlers(dbClient *client.DBClient, eventProducer *kafka.EventProducer) *TaskHandlers {
+func NewTaskHandlers(dbClient DBClientInterface, eventProducer EventProducerInterface) *TaskHandlers {
 	return &TaskHandlers{
 		DBClient:      dbClient,
 		EventProducer: eventProducer,
@@ -47,17 +45,17 @@ func (h *TaskHandlers) HandleCreateTask(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		http.Error(w, `error: Failed to create task`, http.StatusInternalServerError)
 		h.EventProducer.SendEvent(
-		claims.UserID,
-		claims.Username, 
-		"CREATE_TASK", 
-		fmt.Sprintf("Failed to create task: name=%s", req.Name), "ERROR")
+			claims.UserID,
+			claims.Username,
+			"CREATE_TASK",
+			fmt.Sprintf("Failed to create task: name=%s", req.Name), "ERROR")
 		return
 	}
 
 	h.EventProducer.SendEvent(
 		claims.UserID,
-		claims.Username, 
-		"CREATE_TASK", 
+		claims.Username,
+		"CREATE_TASK",
 		fmt.Sprintf("Task created: id=%d, name=%s", task.ID, task.Name), "SUCCESS")
 
 	w.Header().Set("Content-Type", "application/json")
@@ -101,17 +99,17 @@ func (h *TaskHandlers) HandleDeleteTask(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		http.Error(w, `{"error": "Failed to delete task"}`, http.StatusInternalServerError)
 		h.EventProducer.SendEvent(
-			claims.UserID, 
-			claims.Username, 
-			"DELETE_TASK", 
+			claims.UserID,
+			claims.Username,
+			"DELETE_TASK",
 			fmt.Sprintf("Failed to delete task: id=%d", id), "ERROR")
 		return
 	}
 
 	h.EventProducer.SendEvent(
-		claims.UserID, 
-		claims.Username, 
-		"DELETE_TASK", 
+		claims.UserID,
+		claims.Username,
+		"DELETE_TASK",
 		fmt.Sprintf("Task deleted: id=%d", id), "SUCCESS")
 
 	w.Header().Set("Content-Type", "application/json")
@@ -137,17 +135,17 @@ func (h *TaskHandlers) HandleCompleteTask(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		http.Error(w, `{"error": "Failed to complete task"}`, http.StatusInternalServerError)
 		h.EventProducer.SendEvent(
-			claims.UserID, 
-			claims.Username, 
-			"COMPLETE_TASK", 
+			claims.UserID,
+			claims.Username,
+			"COMPLETE_TASK",
 			fmt.Sprintf("Failed to complete task: id=%d", id), "ERROR")
 		return
 	}
 
 	h.EventProducer.SendEvent(
-		claims.UserID, 
-		claims.Username, 
-		"COMPLETE_TASK", 
+		claims.UserID,
+		claims.Username,
+		"COMPLETE_TASK",
 		fmt.Sprintf("Task completed: id=%d", id), "SUCCESS")
 
 	w.Header().Set("Content-Type", "application/json")

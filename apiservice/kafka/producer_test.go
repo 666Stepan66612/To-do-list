@@ -318,3 +318,199 @@ func TestEventWithCyrillicCharacters(t *testing.T) {
 		t.Errorf("Details с кириллицей не совпадают: получено %s, ожидается %s", decoded.Details, event.Details)
 	}
 }
+
+// ============================================================================
+// ТЕСТЫ ДЛЯ NewEventProducer
+// ============================================================================
+
+func TestNewEventProducerWithEmptyBrokers(t *testing.T) {
+	_, err := NewEventProducer([]string{}, "test-topic")
+	if err == nil {
+		t.Error("NewEventProducer() должен вернуть ошибку с пустым списком брокеров")
+	}
+}
+
+func TestNewEventProducerWithNilBrokers(t *testing.T) {
+	_, err := NewEventProducer(nil, "test-topic")
+	if err == nil {
+		t.Error("NewEventProducer() должен вернуть ошибку с nil брокерами")
+	}
+}
+
+func TestNewEventProducerWithInvalidBroker(t *testing.T) {
+	// Используем недопустимый адрес брокера
+	_, err := NewEventProducer([]string{"invalid:99999"}, "test-topic")
+	if err == nil {
+		t.Error("NewEventProducer() должен вернуть ошибку с недопустимым адресом брокера")
+	}
+}
+
+func TestNewEventProducerWithEmptyTopic(t *testing.T) {
+	// Попытка создать продюсера с пустым топиком
+	// Это технически должно работать на этапе создания, но может вызвать проблемы при отправке
+	producer, err := NewEventProducer([]string{"localhost:9092"}, "")
+	if err == nil && producer != nil {
+		// Продюсер создан, но топик пустой - это может быть проблемой при SendEvent
+		// Проверяем, что топик сохранен
+		if producer.topic != "" {
+			t.Errorf("Топик должен быть пустым, получен: %s", producer.topic)
+		}
+		// Закрываем producer только если он создался
+		producer.Close()
+	}
+	// Если ошибка - это нормально, так как брокер недоступен в тестовой среде
+}
+
+func TestNewEventProducerWithInvalidPort(t *testing.T) {
+	_, err := NewEventProducer([]string{"localhost:abc"}, "test-topic")
+	if err == nil {
+		t.Error("NewEventProducer() должен вернуть ошибку с недопустимым портом")
+	}
+}
+
+func TestNewEventProducerWithMultipleBrokers(t *testing.T) {
+	// Тест с несколькими недоступными брокерами
+	_, err := NewEventProducer([]string{"broker1:9092", "broker2:9092", "broker3:9092"}, "test-topic")
+	// Должна быть ошибка, так как брокеры недоступны
+	if err == nil {
+		t.Error("NewEventProducer() должен вернуть ошибку с недоступными брокерами")
+	}
+}
+
+// ============================================================================
+// ДОПОЛНИТЕЛЬНЫЕ ТЕСТЫ ДЛЯ Event
+// ============================================================================
+
+func TestEventWithZeroUserID(t *testing.T) {
+	event := Event{
+		Timestamp: time.Now().Format(time.RFC3339),
+		UserID:    0,
+		Username:  "guest",
+		Action:    "VIEW",
+		Details:   "Viewed page",
+		Status:    "SUCCESS",
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		t.Fatalf("Не удалось сериализовать Event с нулевым UserID: %v", err)
+	}
+
+	var decoded Event
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Не удалось десериализовать Event: %v", err)
+	}
+
+	if decoded.UserID != 0 {
+		t.Errorf("UserID должен быть 0, получено: %d", decoded.UserID)
+	}
+}
+
+func TestEventWithNegativeUserID(t *testing.T) {
+	event := Event{
+		Timestamp: time.Now().Format(time.RFC3339),
+		UserID:    -1,
+		Username:  "invalid",
+		Action:    "ERROR",
+		Details:   "Invalid user",
+		Status:    "ERROR",
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		t.Fatalf("Не удалось сериализовать Event с отрицательным UserID: %v", err)
+	}
+
+	var decoded Event
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Не удалось десериализовать Event: %v", err)
+	}
+
+	if decoded.UserID != -1 {
+		t.Errorf("UserID должен быть -1, получено: %d", decoded.UserID)
+	}
+}
+
+func TestEventWithVeryLongDetails(t *testing.T) {
+	// Создаем очень длинную строку деталей
+	longDetails := make([]byte, 10000)
+	for i := range longDetails {
+		longDetails[i] = 'A'
+	}
+
+	event := Event{
+		Timestamp: time.Now().Format(time.RFC3339),
+		UserID:    1,
+		Username:  "testuser",
+		Action:    "BULK_OPERATION",
+		Details:   string(longDetails),
+		Status:    "SUCCESS",
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		t.Fatalf("Не удалось сериализовать Event с длинными деталями: %v", err)
+	}
+
+	var decoded Event
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Не удалось десериализовать Event с длинными деталями: %v", err)
+	}
+
+	if len(decoded.Details) != len(event.Details) {
+		t.Errorf("Длина Details не совпадает: получено %d, ожидается %d", len(decoded.Details), len(event.Details))
+	}
+}
+
+func TestEventWithAllEmptyFields(t *testing.T) {
+	event := Event{
+		Timestamp: "",
+		UserID:    0,
+		Username:  "",
+		Action:    "",
+		Details:   "",
+		Status:    "",
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		t.Fatalf("Не удалось сериализовать Event с пустыми полями: %v", err)
+	}
+
+	var decoded Event
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Не удалось десериализовать Event с пустыми полями: %v", err)
+	}
+
+	if decoded.Username != "" || decoded.Action != "" {
+		t.Error("Пустые поля должны оставаться пустыми после десериализации")
+	}
+}
+
+func TestEventWithSpecialJSONCharacters(t *testing.T) {
+	event := Event{
+		Timestamp: time.Now().Format(time.RFC3339),
+		UserID:    1,
+		Username:  `user"with"quotes`,
+		Action:    "TEST\nNEWLINE\tTAB",
+		Details:   `{"nested": "json", "value": 123}`,
+		Status:    "SUCCESS",
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		t.Fatalf("Не удалось сериализовать Event со специальными символами: %v", err)
+	}
+
+	var decoded Event
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Не удалось десериализовать Event со специальными символами: %v", err)
+	}
+
+	if decoded.Username != event.Username {
+		t.Errorf("Username со спецсимволами не совпадает: получено %s, ожидается %s", decoded.Username, event.Username)
+	}
+	if decoded.Details != event.Details {
+		t.Errorf("Details со спецсимволами не совпадают: получено %s, ожидается %s", decoded.Details, event.Details)
+	}
+}

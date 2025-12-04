@@ -7,12 +7,117 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/gorilla/mux"
 )
+
+// ============================================================================
+// MOCK IMPLEMENTATIONS
+// ============================================================================
+
+// MockDBClient для тестирования handlers
+type MockDBClient struct {
+	CreateTaskFunc     func(*models.CreateTaskRequest, int) (*models.Task, error)
+	GetAllTasksFunc    func(int) ([]models.Task, error)
+	DeleteTaskFunc     func(int, int) error
+	CompleteTaskFunc   func(int, int) error
+	GetCompletedFunc   func(int) ([]models.Task, error)
+	GetUncompletedFunc func(int) ([]models.Task, error)
+	GetTaskByIDFunc    func(int) (*models.Task, error)
+	GetTaskByNameFunc  func(string) (*models.Task, error)
+}
+
+func (m *MockDBClient) CreateTask(req *models.CreateTaskRequest, userID int) (*models.Task, error) {
+	if m.CreateTaskFunc != nil {
+		return m.CreateTaskFunc(req, userID)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *MockDBClient) GetAllTasks(userID int) ([]models.Task, error) {
+	if m.GetAllTasksFunc != nil {
+		return m.GetAllTasksFunc(userID)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *MockDBClient) DeleteTask(taskID, userID int) error {
+	if m.DeleteTaskFunc != nil {
+		return m.DeleteTaskFunc(taskID, userID)
+	}
+	return errors.New("not implemented")
+}
+
+func (m *MockDBClient) CompleteTask(taskID, userID int) error {
+	if m.CompleteTaskFunc != nil {
+		return m.CompleteTaskFunc(taskID, userID)
+	}
+	return errors.New("not implemented")
+}
+
+func (m *MockDBClient) GetCompleted(userID int) ([]models.Task, error) {
+	if m.GetCompletedFunc != nil {
+		return m.GetCompletedFunc(userID)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *MockDBClient) GetUncompleted(userID int) ([]models.Task, error) {
+	if m.GetUncompletedFunc != nil {
+		return m.GetUncompletedFunc(userID)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *MockDBClient) GetTaskByID(id int) (*models.Task, error) {
+	if m.GetTaskByIDFunc != nil {
+		return m.GetTaskByIDFunc(id)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *MockDBClient) GetTaskByName(name string) (*models.Task, error) {
+	if m.GetTaskByNameFunc != nil {
+		return m.GetTaskByNameFunc(name)
+	}
+	return nil, errors.New("not implemented")
+}
+
+// MockEventProducer для тестирования handlers
+type MockEventProducer struct {
+	SendEventFunc func(userID int, username, action, details, status string) error
+	Events        []MockEvent
+}
+
+type MockEvent struct {
+	UserID   int
+	Username string
+	Action   string
+	Details  string
+	Status   string
+}
+
+func (m *MockEventProducer) SendEvent(userID int, username, action, details, status string) error {
+	m.Events = append(m.Events, MockEvent{
+		UserID:   userID,
+		Username: username,
+		Action:   action,
+		Details:  details,
+		Status:   status,
+	})
+	if m.SendEventFunc != nil {
+		return m.SendEventFunc(userID, username, action, details, status)
+	}
+	return nil
+}
+
+func (m *MockEventProducer) Close() error {
+	return nil
+}
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -535,4 +640,418 @@ func TestHandleGetTasksByNameSpecialChars(t *testing.T) {
 	}()
 
 	handler.HandleGetTasksByName(rr, req)
+}
+
+// ============================================================================
+// ТЕСТЫ С MOCK КЛИЕНТАМИ (УСПЕШНЫЕ СЦЕНАРИИ)
+// ============================================================================
+
+func TestHandleCreateTaskWithMockSuccess(t *testing.T) {
+	mockDB := &MockDBClient{
+		CreateTaskFunc: func(req *models.CreateTaskRequest, userID int) (*models.Task, error) {
+			return &models.Task{
+				ID:       1,
+				Name:     req.Name,
+				Text:     req.Text,
+				Complete: false,
+			}, nil
+		},
+	}
+
+	mockKafka := &MockEventProducer{
+		Events: []MockEvent{},
+	}
+
+	handler := &TaskHandlers{
+		DBClient:      mockDB,
+		EventProducer: mockKafka,
+	}
+
+	reqBody := `{"name":"Test Task","text":"Description"}`
+	req := httptest.NewRequest("POST", "/create", bytes.NewBufferString(reqBody))
+	req = addAuthContext(req, 1, "testuser")
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+	handler.HandleCreateTask(rr, req)
+
+	if status := rr.Code; status != http.StatusCreated {
+		t.Errorf("Неправильный статус: получено %v, ожидается %v", status, http.StatusCreated)
+	}
+
+	var task models.Task
+	if err := json.Unmarshal(rr.Body.Bytes(), &task); err != nil {
+		t.Fatalf("Не удалось распарсить ответ: %v", err)
+	}
+
+	if task.Name != "Test Task" {
+		t.Errorf("Неправильное имя: получено %s, ожидается Test Task", task.Name)
+	}
+
+	if len(mockKafka.Events) != 1 {
+		t.Errorf("Неправильное количество событий: получено %d, ожидается 1", len(mockKafka.Events))
+	}
+
+	if mockKafka.Events[0].Action != "CREATE_TASK" {
+		t.Errorf("Неправильное действие: получено %s, ожидается CREATE_TASK", mockKafka.Events[0].Action)
+	}
+}
+
+func TestHandleCreateTaskWithMockDBError(t *testing.T) {
+	mockDB := &MockDBClient{
+		CreateTaskFunc: func(req *models.CreateTaskRequest, userID int) (*models.Task, error) {
+			return nil, errors.New("database error")
+		},
+	}
+
+	mockKafka := &MockEventProducer{
+		Events: []MockEvent{},
+	}
+
+	handler := &TaskHandlers{
+		DBClient:      mockDB,
+		EventProducer: mockKafka,
+	}
+
+	reqBody := `{"name":"Test Task"}`
+	req := httptest.NewRequest("POST", "/create", bytes.NewBufferString(reqBody))
+	req = addAuthContext(req, 1, "testuser")
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+	handler.HandleCreateTask(rr, req)
+
+	if status := rr.Code; status != http.StatusInternalServerError {
+		t.Errorf("Неправильный статус: получено %v, ожидается %v", status, http.StatusInternalServerError)
+	}
+
+	if len(mockKafka.Events) != 1 || mockKafka.Events[0].Status != "ERROR" {
+		t.Error("Должно быть отправлено событие об ошибке")
+	}
+}
+
+func TestHandleGetAllTasksWithMockSuccess(t *testing.T) {
+	mockDB := &MockDBClient{
+		GetAllTasksFunc: func(userID int) ([]models.Task, error) {
+			return []models.Task{
+				{ID: 1, Name: "Task 1", Complete: false},
+				{ID: 2, Name: "Task 2", Complete: true},
+			}, nil
+		},
+	}
+
+	handler := &TaskHandlers{
+		DBClient:      mockDB,
+		EventProducer: &MockEventProducer{},
+	}
+
+	req := httptest.NewRequest("GET", "/tasks", nil)
+	req = addAuthContext(req, 1, "testuser")
+
+	rr := httptest.NewRecorder()
+	handler.HandleGetAllTasks(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Неправильный статус: получено %v, ожидается %v", status, http.StatusOK)
+	}
+
+	var tasks []models.Task
+	if err := json.Unmarshal(rr.Body.Bytes(), &tasks); err != nil {
+		t.Fatalf("Не удалось распарсить ответ: %v", err)
+	}
+
+	if len(tasks) != 2 {
+		t.Errorf("Неправильное количество задач: получено %d, ожидается 2", len(tasks))
+	}
+}
+
+func TestHandleGetAllTasksWithMockError(t *testing.T) {
+	mockDB := &MockDBClient{
+		GetAllTasksFunc: func(userID int) ([]models.Task, error) {
+			return nil, errors.New("database error")
+		},
+	}
+
+	handler := &TaskHandlers{
+		DBClient:      mockDB,
+		EventProducer: &MockEventProducer{},
+	}
+
+	req := httptest.NewRequest("GET", "/tasks", nil)
+	req = addAuthContext(req, 1, "testuser")
+
+	rr := httptest.NewRecorder()
+	handler.HandleGetAllTasks(rr, req)
+
+	if status := rr.Code; status != http.StatusInternalServerError {
+		t.Errorf("Неправильный статус: получено %v, ожидается %v", status, http.StatusInternalServerError)
+	}
+}
+
+func TestHandleDeleteTaskWithMockSuccess(t *testing.T) {
+	mockDB := &MockDBClient{
+		DeleteTaskFunc: func(taskID, userID int) error {
+			return nil
+		},
+	}
+
+	mockKafka := &MockEventProducer{
+		Events: []MockEvent{},
+	}
+
+	handler := &TaskHandlers{
+		DBClient:      mockDB,
+		EventProducer: mockKafka,
+	}
+
+	req := httptest.NewRequest("DELETE", "/delete/1", nil)
+	req = addAuthContext(req, 1, "testuser")
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+	rr := httptest.NewRecorder()
+	handler.HandleDeleteTask(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Неправильный статус: получено %v, ожидается %v", status, http.StatusOK)
+	}
+
+	if len(mockKafka.Events) != 1 || mockKafka.Events[0].Action != "DELETE_TASK" {
+		t.Error("Должно быть отправлено событие DELETE_TASK")
+	}
+}
+
+func TestHandleDeleteTaskWithMockError(t *testing.T) {
+	mockDB := &MockDBClient{
+		DeleteTaskFunc: func(taskID, userID int) error {
+			return errors.New("database error")
+		},
+	}
+
+	mockKafka := &MockEventProducer{
+		Events: []MockEvent{},
+	}
+
+	handler := &TaskHandlers{
+		DBClient:      mockDB,
+		EventProducer: mockKafka,
+	}
+
+	req := httptest.NewRequest("DELETE", "/delete/1", nil)
+	req = addAuthContext(req, 1, "testuser")
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+	rr := httptest.NewRecorder()
+	handler.HandleDeleteTask(rr, req)
+
+	if status := rr.Code; status != http.StatusInternalServerError {
+		t.Errorf("Неправильный статус: получено %v, ожидается %v", status, http.StatusInternalServerError)
+	}
+
+	if len(mockKafka.Events) != 1 || mockKafka.Events[0].Status != "ERROR" {
+		t.Error("Должно быть отправлено событие об ошибке")
+	}
+}
+
+func TestHandleCompleteTaskWithMockSuccess(t *testing.T) {
+	mockDB := &MockDBClient{
+		CompleteTaskFunc: func(taskID, userID int) error {
+			return nil
+		},
+	}
+
+	mockKafka := &MockEventProducer{
+		Events: []MockEvent{},
+	}
+
+	handler := &TaskHandlers{
+		DBClient:      mockDB,
+		EventProducer: mockKafka,
+	}
+
+	req := httptest.NewRequest("POST", "/complete/1", nil)
+	req = addAuthContext(req, 1, "testuser")
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+	rr := httptest.NewRecorder()
+	handler.HandleCompleteTask(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Неправильный статус: получено %v, ожидается %v", status, http.StatusOK)
+	}
+
+	if len(mockKafka.Events) != 1 || mockKafka.Events[0].Action != "COMPLETE_TASK" {
+		t.Error("Должно быть отправлено событие COMPLETE_TASK")
+	}
+}
+
+func TestHandleCompleteTaskWithMockError(t *testing.T) {
+	mockDB := &MockDBClient{
+		CompleteTaskFunc: func(taskID, userID int) error {
+			return errors.New("database error")
+		},
+	}
+
+	mockKafka := &MockEventProducer{
+		Events: []MockEvent{},
+	}
+
+	handler := &TaskHandlers{
+		DBClient:      mockDB,
+		EventProducer: mockKafka,
+	}
+
+	req := httptest.NewRequest("POST", "/complete/1", nil)
+	req = addAuthContext(req, 1, "testuser")
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+	rr := httptest.NewRecorder()
+	handler.HandleCompleteTask(rr, req)
+
+	if status := rr.Code; status != http.StatusInternalServerError {
+		t.Errorf("Неправильный статус: получено %v, ожидается %v", status, http.StatusInternalServerError)
+	}
+
+	if len(mockKafka.Events) != 1 || mockKafka.Events[0].Status != "ERROR" {
+		t.Error("Должно быть отправлено событие об ошибке")
+	}
+}
+
+func TestHandleGetCompletedTasksWithMockSuccess(t *testing.T) {
+	mockDB := &MockDBClient{
+		GetCompletedFunc: func(userID int) ([]models.Task, error) {
+			return []models.Task{
+				{ID: 1, Name: "Completed Task", Complete: true},
+			}, nil
+		},
+	}
+
+	handler := &TaskHandlers{
+		DBClient:      mockDB,
+		EventProducer: &MockEventProducer{},
+	}
+
+	req := httptest.NewRequest("GET", "/completed", nil)
+	req = addAuthContext(req, 1, "testuser")
+
+	rr := httptest.NewRecorder()
+	handler.HandleGetCompletedTasks(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Неправильный статус: получено %v, ожидается %v", status, http.StatusOK)
+	}
+
+	var tasks []models.Task
+	if err := json.Unmarshal(rr.Body.Bytes(), &tasks); err != nil {
+		t.Fatalf("Не удалось распарсить ответ: %v", err)
+	}
+
+	if len(tasks) != 1 || !tasks[0].Complete {
+		t.Error("Должна быть одна завершенная задача")
+	}
+}
+
+func TestHandleGetUncompletedTasksWithMockSuccess(t *testing.T) {
+	mockDB := &MockDBClient{
+		GetUncompletedFunc: func(userID int) ([]models.Task, error) {
+			return []models.Task{
+				{ID: 1, Name: "Uncompleted Task", Complete: false},
+			}, nil
+		},
+	}
+
+	handler := &TaskHandlers{
+		DBClient:      mockDB,
+		EventProducer: &MockEventProducer{},
+	}
+
+	req := httptest.NewRequest("GET", "/uncompleted", nil)
+	req = addAuthContext(req, 1, "testuser")
+
+	rr := httptest.NewRecorder()
+	handler.HandleGetUncompletedTasks(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Неправильный статус: получено %v, ожидается %v", status, http.StatusOK)
+	}
+
+	var tasks []models.Task
+	if err := json.Unmarshal(rr.Body.Bytes(), &tasks); err != nil {
+		t.Fatalf("Не удалось распарсить ответ: %v", err)
+	}
+
+	if len(tasks) != 1 || tasks[0].Complete {
+		t.Error("Должна быть одна незавершенная задача")
+	}
+}
+
+func TestHandleGetTasksByIDWithMockSuccess(t *testing.T) {
+	mockDB := &MockDBClient{
+		GetTaskByIDFunc: func(id int) (*models.Task, error) {
+			return &models.Task{
+				ID:       id,
+				Name:     "Test Task",
+				Complete: false,
+			}, nil
+		},
+	}
+
+	handler := &TaskHandlers{
+		DBClient:      mockDB,
+		EventProducer: &MockEventProducer{},
+	}
+
+	req := httptest.NewRequest("GET", "/task/1", nil)
+	req = mux.SetURLVars(req, map[string]string{"id": "1"})
+
+	rr := httptest.NewRecorder()
+	handler.HandleGetTasksByID(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Неправильный статус: получено %v, ожидается %v", status, http.StatusOK)
+	}
+
+	var task models.Task
+	if err := json.Unmarshal(rr.Body.Bytes(), &task); err != nil {
+		t.Fatalf("Не удалось распарсить ответ: %v", err)
+	}
+
+	if task.ID != 1 {
+		t.Errorf("Неправильный ID: получено %d, ожидается 1", task.ID)
+	}
+}
+
+func TestHandleGetTasksByNameWithMockSuccess(t *testing.T) {
+	mockDB := &MockDBClient{
+		GetTaskByNameFunc: func(name string) (*models.Task, error) {
+			return &models.Task{
+				ID:       1,
+				Name:     name,
+				Complete: false,
+			}, nil
+		},
+	}
+
+	handler := &TaskHandlers{
+		DBClient:      mockDB,
+		EventProducer: &MockEventProducer{},
+	}
+
+	req := httptest.NewRequest("GET", "/task/name/TestTask", nil)
+	req = mux.SetURLVars(req, map[string]string{"name": "TestTask"})
+
+	rr := httptest.NewRecorder()
+	handler.HandleGetTasksByName(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Неправильный статус: получено %v, ожидается %v", status, http.StatusOK)
+	}
+
+	var task models.Task
+	if err := json.Unmarshal(rr.Body.Bytes(), &task); err != nil {
+		t.Fatalf("Не удалось распарсить ответ: %v", err)
+	}
+
+	if task.Name != "TestTask" {
+		t.Errorf("Неправильное имя: получено %s, ожидается TestTask", task.Name)
+	}
 }
