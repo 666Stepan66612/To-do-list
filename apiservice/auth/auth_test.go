@@ -313,3 +313,132 @@ func TestValidateTokenExpiry(t *testing.T) {
 		t.Errorf("ValidateToken() вернул claims с неправильным ExpiresAt: разница %v", diff)
 	}
 }
+
+// ============================================================================
+// ДОПОЛНИТЕЛЬНЫЕ ГРАНИЧНЫЕ ТЕСТЫ
+// ============================================================================
+
+func TestHashPasswordVeryLong(t *testing.T) {
+	// Длинный пароль (70 символов - в пределах bcrypt лимита 72 байта)
+	longPassword := ""
+	for i := 0; i < 70; i++ {
+		longPassword += "a"
+	}
+
+	hash, err := HashPassword(longPassword)
+	if err != nil {
+		t.Fatalf("HashPassword() вернул ошибку для длинного пароля: %v", err)
+	}
+
+	if hash == "" {
+		t.Error("HashPassword() вернул пустой хеш")
+	}
+
+	// Проверяем, что можем проверить длинный пароль
+	err = CheckPassword(longPassword, hash)
+	if err != nil {
+		t.Errorf("CheckPassword() не смог проверить длинный пароль: %v", err)
+	}
+}
+
+func TestCheckPasswordWithWrongHash(t *testing.T) {
+	password := "correctPassword"
+	wrongHash := "not_a_valid_bcrypt_hash"
+
+	err := CheckPassword(password, wrongHash)
+	if err == nil {
+		t.Error("CheckPassword() должен вернуть ошибку для невалидного хеша")
+	}
+}
+
+func TestGenerateTokenNegativeUserID(t *testing.T) {
+	token, err := GenerateToken(-1, "testuser")
+	if err != nil {
+		t.Fatalf("GenerateToken() вернул ошибку для отрицательного userID: %v", err)
+	}
+
+	// Должен сгенерировать токен даже с отрицательным ID
+	if token == "" {
+		t.Error("GenerateToken() вернул пустой токен")
+	}
+
+	// Проверяем, что токен валиден
+	claims, err := ValidateToken(token)
+	if err != nil {
+		t.Fatalf("ValidateToken() не смог проверить токен: %v", err)
+	}
+
+	if claims.UserID != -1 {
+		t.Errorf("Неправильный UserID: получено %d, ожидается -1", claims.UserID)
+	}
+}
+
+func TestGenerateTokenWithSpecialCharsUsername(t *testing.T) {
+	specialUsername := "user@example.com!#$%"
+	token, err := GenerateToken(1, specialUsername)
+	if err != nil {
+		t.Fatalf("GenerateToken() вернул ошибку для username со спецсимволами: %v", err)
+	}
+
+	claims, err := ValidateToken(token)
+	if err != nil {
+		t.Fatalf("ValidateToken() не смог проверить токен: %v", err)
+	}
+
+	if claims.Username != specialUsername {
+		t.Errorf("Username не совпадает: получено %s, ожидается %s", claims.Username, specialUsername)
+	}
+}
+
+func TestValidateTokenWithDifferentSecret(t *testing.T) {
+	// Создаем токен
+	token, err := GenerateToken(1, "testuser")
+	if err != nil {
+		t.Fatalf("GenerateToken() вернул ошибку: %v", err)
+	}
+
+	// Пытаемся изменить токен (подменить данные)
+	fakeToken := token + "fake"
+
+	_, err = ValidateToken(fakeToken)
+	if err == nil {
+		t.Error("ValidateToken() должен вернуть ошибку для измененного токена")
+	}
+}
+
+func TestValidateTokenPartialToken(t *testing.T) {
+	token, _ := GenerateToken(1, "testuser")
+
+	// Берем только часть токена
+	partialToken := token[:len(token)/2]
+
+	_, err := ValidateToken(partialToken)
+	if err == nil {
+		t.Error("ValidateToken() должен вернуть ошибку для частичного токена")
+	}
+}
+
+func TestHashPasswordUnicode(t *testing.T) {
+	unicodePassword := "Пароль123!@#密码"
+
+	hash, err := HashPassword(unicodePassword)
+	if err != nil {
+		t.Fatalf("HashPassword() вернул ошибку для unicode пароля: %v", err)
+	}
+
+	err = CheckPassword(unicodePassword, hash)
+	if err != nil {
+		t.Errorf("CheckPassword() не смог проверить unicode пароль: %v", err)
+	}
+}
+
+func TestCheckPasswordCaseSensitive(t *testing.T) {
+	password := "MyPassword123"
+	hash, _ := HashPassword(password)
+
+	// Проверяем с другим регистром
+	err := CheckPassword("mypassword123", hash)
+	if err == nil {
+		t.Error("CheckPassword() должен быть чувствителен к регистру")
+	}
+}
