@@ -2,7 +2,7 @@
 
 A microservices-based task management application with JWT authentication, event logging via Kafka, and modern web interface.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Clone repository
@@ -17,16 +17,16 @@ docker-compose up --build
 # API: http://localhost:8081
 ```
 
-## 📋 Features
+## Features
 
-- ✅ **User Authentication** - JWT-based auth with bcrypt password hashing
-- 📝 **Task Management** - Create, complete, delete tasks with descriptions
-- 🔒 **User Isolation** - Each user sees only their own tasks
-- 📊 **Event Logging** - All actions logged to Kafka with user information
-- 🎨 **Modern UI** - Responsive web interface with auth screens
-- 🔍 **Task Filtering** - View all, active, or completed tasks
+- **User Authentication** - JWT-based auth with bcrypt password hashing
+- **Task Management** - Create, complete, delete tasks with descriptions
+- **User Isolation** - Each user sees only their own tasks
+- **Event Logging** - All actions logged to Kafka with user information
+- **Modern UI** - Responsive web interface with auth screens
+- **Task Filtering** - View all, active, or completed tasks
 
-## 🏗️ Architecture
+## Architecture
 
 **7 Microservices:**
 - **Frontend** (nginx) - Web UI on port 8080
@@ -36,13 +36,13 @@ docker-compose up --build
 - **Kafka + Zookeeper** - Event streaming
 - **Kafka Service** (Go) - Event consumer and logger
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Backend:** Go 1.25, PostgreSQL 15, Kafka 7.5, JWT, Bcrypt
 - **Frontend:** HTML5/CSS3/JavaScript, Nginx
 - **Infrastructure:** Docker, Docker Compose
 
-## 📡 API Endpoints
+## API Endpoints
 
 ### Authentication
 ```http
@@ -58,7 +58,7 @@ POST   /complete/{id} # Mark task complete
 DELETE /delete/{id}   # Delete task
 ```
 
-## 🔐 Security Features
+## Security Features
 
 - Bcrypt password hashing (cost factor 12)
 - JWT tokens with 24-hour expiry
@@ -66,7 +66,7 @@ DELETE /delete/{id}   # Delete task
 - Complete audit trail with user information
 - SQL injection protection via parameterized queries
 
-## 📊 Event Logging
+## Event Logging
 
 All operations logged to `logs/events.log`:
 ```json
@@ -80,7 +80,7 @@ All operations logged to `logs/events.log`:
 }
 ```
 
-## ⚠️ Production Notes
+## Production Notes
 
 Before deploying to production:
 1. Change JWT secret in `apiservice/auth/auth.go`
@@ -89,7 +89,7 @@ Before deploying to production:
 4. Enable HTTPS with reverse proxy
 5. Set up monitoring for event logs
 
-## 📖 Full Documentation
+## Full Documentation
 
 See [DOCS.md](DOCS.md) for complete documentation including:
 - Detailed architecture
@@ -98,6 +98,6 @@ See [DOCS.md](DOCS.md) for complete documentation including:
 - Deployment guides
 - Environment variables
 
-## 📄 License
+## License
 
 This project is licensed under the terms specified in the LICENSE file.
