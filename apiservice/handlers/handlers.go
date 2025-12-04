@@ -196,6 +196,10 @@ func (h *TaskHandlers) HandleGetUncompletedTasks(w http.ResponseWriter, r *http.
 func (h *TaskHandlers) HandleGetTasksByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, `error: Invalid task ID`, http.StatusBadRequest)
+		return
+	}
 
 	tasks, err := h.DBClient.GetTaskByID(id)
 	if err != nil {
