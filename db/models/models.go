@@ -24,8 +24,8 @@ type User struct {
 }
 
 type CreateUserRequest struct {
-	Username     string `json:username`
-	PasswordHash string `json:password_hash`
+	Username     string `json:"username"`
+	PasswordHash string `json:"password_hash"`
 }
 
 type TaskRepository struct {

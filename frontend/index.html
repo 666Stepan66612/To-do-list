@@ -28,6 +28,103 @@
             padding: 30px;
         }
 
+        .auth-container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .user-name {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .btn-logout {
+            padding: 8px 20px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-logout:hover {
+            background: #c82333;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .auth-form h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .auth-form input {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .auth-form input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .auth-form button {
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .auth-form button:hover {
+            background: #5568d3;
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 15px;
+            color: #666;
+        }
+
+        .auth-switch a {
+            color: #667eea;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .auth-switch a:hover {
+            color: #5568d3;
+        }
+
         h1 {
             color: #333;
             margin-bottom: 30px;
@@ -280,7 +377,43 @@
 </head>
 
 <body>
-    <div class="container">
+    <!-- Auth Screen -->
+    <div class="auth-container" id="authScreen">
+        <div class="error" id="authError"></div>
+
+        <!-- Login Form -->
+        <div class="auth-form" id="loginForm">
+            <h2>🔐 Вход</h2>
+            <input type="text" id="loginUsername" placeholder="Логин" />
+            <input type="password" id="loginPassword" placeholder="Пароль" />
+            <button onclick="login()">Войти</button>
+            <div class="auth-switch">
+                Нет аккаунта? <a onclick="showRegister()">Регистрация</a>
+            </div>
+        </div>
+
+        <!-- Register Form -->
+        <div class="auth-form hidden" id="registerForm">
+            <h2>📝 Регистрация</h2>
+            <input type="text" id="registerUsername" placeholder="Логин (минимум 3 символа)" />
+            <input type="password" id="registerPassword" placeholder="Пароль (минимум 8 символов)" />
+            <button onclick="register()">Зарегистрироваться</button>
+            <div class="auth-switch">
+                Уже есть аккаунт? <a onclick="showLogin()">Войти</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="container hidden" id="mainApp">
+        <div class="user-info">
+            <div>
+                <span>Пользователь: </span>
+                <span class="user-name" id="currentUser"></span>
+            </div>
+            <button class="btn-logout" onclick="logout()">Выйти</button>
+        </div>
+
         <h1>📝 TODO List</h1>
 
         <div class="error" id="error"></div>
@@ -342,10 +475,143 @@
         let currentFilter = 'all';
         let tasks = [];
 
-        // Загрузка задач при старте
+        // Проверка авторизации при старте
         document.addEventListener('DOMContentLoaded', () => {
-            loadTasks();
+            checkAuth();
         });
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const username = localStorage.getItem('username');
+
+            if (token && username) {
+                showMainApp(username);
+                loadTasks();
+            } else {
+                showAuthScreen();
+            }
+        }
+
+        function showAuthScreen() {
+            document.getElementById('authScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+
+        function showMainApp(username) {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('currentUser').textContent = username;
+        }
+
+        function showLogin() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+        }
+
+        function showRegister() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+        }
+
+        async function login() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!username || !password) {
+                showAuthError('Заполните все поля');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error || 'Ошибка входа');
+                }
+
+                const data = await response.json();
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('username', data.username);
+
+                document.getElementById('loginUsername').value = '';
+                document.getElementById('loginPassword').value = '';
+
+                showMainApp(data.username);
+                loadTasks();
+            } catch (error) {
+                showAuthError(error.message);
+            }
+        }
+
+        async function register() {
+            const username = document.getElementById('registerUsername').value.trim();
+            const password = document.getElementById('registerPassword').value;
+
+            if (!username || !password) {
+                showAuthError('Заполните все поля');
+                return;
+            }
+
+            if (username.length < 3) {
+                showAuthError('Логин должен быть минимум 3 символа');
+                return;
+            }
+
+            if (password.length < 8) {
+                showAuthError('Пароль должен быть минимум 8 символов');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error || 'Ошибка регистрации');
+                }
+
+                const data = await response.json();
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('username', data.username);
+
+                document.getElementById('registerUsername').value = '';
+                document.getElementById('registerPassword').value = '';
+
+                showMainApp(data.username);
+                loadTasks();
+            } catch (error) {
+                showAuthError(error.message);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            tasks = [];
+            showAuthScreen();
+            showLogin();
+        }
+
+        function getAuthHeaders() {
+            const token = localStorage.getItem('token');
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+        }
 
         // Обработка Enter в поле ввода
         document.getElementById('taskInput').addEventListener('keypress', (e) => {
@@ -356,7 +622,15 @@
 
         async function loadTasks() {
             try {
-                const response = await fetch(`${API_URL}/tasks`);
+                const response = await fetch(`${API_URL}/tasks`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (response.status === 401) {
+                    logout();
+                    return;
+                }
+
                 if (!response.ok) throw new Error('Ошибка загрузки задач');
 
                 const data = await response.json();
@@ -381,14 +655,17 @@
             try {
                 const response = await fetch(`${API_URL}/create`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({
                         name: taskName,
                         text: taskDescription
                     })
                 });
+
+                if (response.status === 401) {
+                    logout();
+                    return;
+                }
 
                 if (!response.ok) throw new Error('Ошибка создания задачи');
 
@@ -407,8 +684,14 @@
 
             try {
                 const response = await fetch(`${API_URL}/complete/${id}`, {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: getAuthHeaders()
                 });
+
+                if (response.status === 401) {
+                    logout();
+                    return;
+                }
 
                 if (!response.ok) throw new Error('Ошибка завершения задачи');
 
@@ -424,8 +707,14 @@
 
             try {
                 const response = await fetch(`${API_URL}/delete/${id}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
                 });
+
+                if (response.status === 401) {
+                    logout();
+                    return;
+                }
 
                 if (!response.ok) throw new Error('Ошибка удаления задачи');
 
@@ -552,6 +841,30 @@
                 successDiv.style.display = 'none';
             }, 3000);
         }
+
+        function showAuthError(message) {
+            const errorDiv = document.getElementById('authError');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Enter для форм авторизации
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const loginForm = document.getElementById('loginForm');
+                const registerForm = document.getElementById('registerForm');
+
+                if (!loginForm.classList.contains('hidden')) {
+                    login();
+                } else if (!registerForm.classList.contains('hidden')) {
+                    register();
+                }
+            }
+        });
     </script>
 </body>
 
