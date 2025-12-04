@@ -7,28 +7,78 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 )
 
-func main(){
-	connStr := "postgres://postgres:mypostgres@postgres:5432/postgres?sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
-		if err != nil {
-			panic(err)
-		}
-	defer db.Close()
-
-	repo := models.NewTaskRepository(db)
-	if err := repo.CreateTable(); err != nil{
-		log.Fatal(err)
+func main() {
+	// Параметры из docker-compose.yaml
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		dbHost = "postgres"
 	}
 
+	dbUser := os.Getenv("DB_USER")
+	if dbUser == "" {
+		dbUser = "postgres"
+	}
+
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" {
+		dbPassword = "mypostgres"
+	}
+
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		dbName = "postgres"
+	}
+
+	connStr := fmt.Sprintf("host=%s port=5432 user=%s password=%s dbname=%s sslmode=disable",
+		dbHost, dbUser, dbPassword, dbName)
+
+	log.Printf("Connecting to database: host=%s, user=%s, dbname=%s", dbHost, dbUser, dbName)
+
+	var db *sql.DB
+	var err error
+
+	for i := 0; i < 30; i++ {
+		db, err = sql.Open("postgres", connStr)
+		if err == nil {
+			err = db.Ping()
+			if err == nil {
+				log.Println("Successfully connected to database")
+				break
+			}
+		}
+		log.Printf("Failed to connect to database, retrying... (%d/30)", i+1)
+		time.Sleep(2 * time.Second)
+	}
+
+	if err != nil {
+		log.Fatal("Could not connect to database:", err)
+	}
+	defer db.Close()
+
+	// Применяем миграции
+	if err := runMigrations(db); err != nil {
+		log.Fatal("Failed to run migrations:", err)
+	}
+
+	// Инициализируем репозиторий и хендлеры
+	repo := models.NewTaskRepository(db)
 	taskHandlers := handlers.NewTaskHandlers(repo)
 
+	// Создаём роутер
 	router := mux.NewRouter()
 
+	// Роуты для пользователей
+	router.HandleFunc("/user/create", handlers.CreateUser(db)).Methods("POST")
+	router.HandleFunc("/user/{username}", handlers.GetUserByUsername(db)).Methods("GET")
+
+	// Роуты для задач
 	router.Path("/create").Methods("POST").HandlerFunc(taskHandlers.HandleCreate)
 	router.Path("/get").Methods("GET").Queries("complete", "true").HandlerFunc(taskHandlers.HandleGetCompleted)
 	router.Path("/get").Methods("GET").Queries("complete", "false").HandlerFunc(taskHandlers.HandleGetUncompleted)
@@ -38,16 +88,29 @@ func main(){
 	router.Path("/getbyid/{id}").Methods("GET").HandlerFunc(taskHandlers.HandleGetByID)
 	router.Path("/getbyname/{name}").Methods("GET").HandlerFunc(taskHandlers.HandleGetByName)
 
-    if err := http.ListenAndServe(":8080", router); err != nil {
-        log.Fatal(err)
-    }
+	if err := http.ListenAndServe(":8080", router); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func runMigrations(db *sql.DB) error {
+	// 1. Создаём таблицу users (сначала, т.к. tasks ссылается на неё)
 	_, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS users (
+			id SERIAL PRIMARY KEY,
+			username VARCHAR(50) UNIQUE NOT NULL,
+			password_hash VARCHAR(60) NOT NULL,
+			created_at TIMESTAMP DEFAULT NOW()
+		)
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create users table: %w", err)
+	}
+
+	// 2. Создаём таблицу tasks
+	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS tasks (
 			id SERIAL PRIMARY KEY,
-			user_id INT NOT NULL,
 			name VARCHAR(255) NOT NULL,
 			text TEXT,
 			create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -59,17 +122,28 @@ func runMigrations(db *sql.DB) error {
 		return fmt.Errorf("failed to create tasks table: %w", err)
 	}
 
+	// 3. Добавляем колонку user_id (если её нет)
 	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS users (
-			id SERIAL PRIMARY KEY,
-			username VARCHAR(50) UNIQUE NOT NULL,
-			password_hash VARCHAR(60) NOT NULL,
-			created_at TIMESTAMP DEFAULT NOW()
-		)
+		DO $$ 
+		BEGIN
+			IF NOT EXISTS (
+				SELECT 1 FROM information_schema.columns 
+				WHERE table_name = 'tasks' AND column_name = 'user_id'
+			) THEN
+				ALTER TABLE tasks ADD COLUMN user_id INT REFERENCES users(id) ON DELETE CASCADE;
+			END IF;
+		END $$;
 	`)
-
 	if err != nil {
-		return fmt.Errorf("failed to create users table: %w", err)
+		return fmt.Errorf("failed to add user_id column: %w", err)
+	}
+
+	// 4. Создаём индекс для быстрого поиска задач по user_id
+	_, err = db.Exec(`
+		CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create index: %w", err)
 	}
 
 	log.Println("Database migrations ran successfully")
