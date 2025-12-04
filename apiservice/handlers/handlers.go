@@ -46,12 +46,19 @@ func (h *TaskHandlers) HandleCreateTask(w http.ResponseWriter, r *http.Request) 
 	task, err := h.DBClient.CreateTask(&req, claims.UserID)
 	if err != nil {
 		http.Error(w, `error: Failed to create task`, http.StatusInternalServerError)
-		h.EventProducer.SendEvent("CREATE_TASK", fmt.Sprintf("Failed to create task: %s", req.Name), "ERROR")
+		h.EventProducer.SendEvent(
+		claims.UserID,
+		claims.Username, 
+		"CREATE_TASK", 
+		fmt.Sprintf("Failed to create task: name=%s", req.Name), "ERROR")
 		return
 	}
 
-	// Send event to Kafka
-	h.EventProducer.SendEvent("CREATE_TASK", fmt.Sprintf("Task created: id=%d, name=%s", task.ID, task.Name), "SUCCESS")
+	h.EventProducer.SendEvent(
+		claims.UserID,
+		claims.Username, 
+		"CREATE_TASK", 
+		fmt.Sprintf("Task created: id=%d, name=%s", task.ID, task.Name), "SUCCESS")
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -93,12 +100,19 @@ func (h *TaskHandlers) HandleDeleteTask(w http.ResponseWriter, r *http.Request) 
 	err = h.DBClient.DeleteTask(id, claims.UserID)
 	if err != nil {
 		http.Error(w, `{"error": "Failed to delete task"}`, http.StatusInternalServerError)
-		h.EventProducer.SendEvent("DELETE_TASK", fmt.Sprintf("Failed to delete task: id=%d", id), "ERROR")
+		h.EventProducer.SendEvent(
+			claims.UserID, 
+			claims.Username, 
+			"DELETE_TASK", 
+			fmt.Sprintf("Failed to delete task: id=%d", id), "ERROR")
 		return
 	}
 
-	// Send event to Kafka
-	h.EventProducer.SendEvent("DELETE_TASK", fmt.Sprintf("Task deleted: id=%d", id), "SUCCESS")
+	h.EventProducer.SendEvent(
+		claims.UserID, 
+		claims.Username, 
+		"DELETE_TASK", 
+		fmt.Sprintf("Task deleted: id=%d", id), "SUCCESS")
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -122,12 +136,19 @@ func (h *TaskHandlers) HandleCompleteTask(w http.ResponseWriter, r *http.Request
 	err = h.DBClient.CompleteTask(id, claims.UserID)
 	if err != nil {
 		http.Error(w, `{"error": "Failed to complete task"}`, http.StatusInternalServerError)
-		h.EventProducer.SendEvent("COMPLETE_TASK", fmt.Sprintf("Failed to complete task: id=%d", id), "ERROR")
+		h.EventProducer.SendEvent(
+			claims.UserID, 
+			claims.Username, 
+			"COMPLETE_TASK", 
+			fmt.Sprintf("Failed to complete task: id=%d", id), "ERROR")
 		return
 	}
 
-	// Send event to Kafka
-	h.EventProducer.SendEvent("COMPLETE_TASK", fmt.Sprintf("Task completed: id=%d", id), "SUCCESS")
+	h.EventProducer.SendEvent(
+		claims.UserID, 
+		claims.Username, 
+		"COMPLETE_TASK", 
+		fmt.Sprintf("Task completed: id=%d", id), "SUCCESS")
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
