@@ -42,14 +42,18 @@ func TestNewTaskHandlers(t *testing.T) {
 
 // MockDBClient для тестирования handlers
 type MockDBClient struct {
-	CreateTaskFunc     func(*models.CreateTaskRequest, int) (*models.Task, error)
-	GetAllTasksFunc    func(int) ([]models.Task, error)
-	DeleteTaskFunc     func(int, int) error
-	CompleteTaskFunc   func(int, int) error
-	GetCompletedFunc   func(int) ([]models.Task, error)
-	GetUncompletedFunc func(int) ([]models.Task, error)
-	GetTaskByIDFunc    func(int) (*models.Task, error)
-	GetTaskByNameFunc  func(string) (*models.Task, error)
+	CreateTaskFunc           func(*models.CreateTaskRequest, int) (*models.Task, error)
+	GetAllTasksFunc          func(int) ([]models.Task, error)
+	DeleteTaskFunc           func(int, int) error
+	CompleteTaskFunc         func(int, int) error
+	GetCompletedFunc         func(int) ([]models.Task, error)
+	GetUncompletedFunc       func(int) ([]models.Task, error)
+	GetTaskByIDFunc          func(int) (*models.Task, error)
+	GetTaskByNameFunc        func(string) (*models.Task, error)
+	CreateCollectionFunc     func(*models.CreateCollectionRequest, int) (*models.Collection, error)
+	GetCollectionsFunc       func(int) ([]models.Collection, error)
+	DeleteCollectionFunc     func(int, int) error
+	GetTasksByCollectionFunc func(int, int) ([]models.Task, error)
 }
 
 func (m *MockDBClient) CreateTask(req *models.CreateTaskRequest, userID int) (*models.Task, error) {
@@ -104,6 +108,34 @@ func (m *MockDBClient) GetTaskByID(id int) (*models.Task, error) {
 func (m *MockDBClient) GetTaskByName(name string) (*models.Task, error) {
 	if m.GetTaskByNameFunc != nil {
 		return m.GetTaskByNameFunc(name)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *MockDBClient) CreateCollection(req *models.CreateCollectionRequest, userID int) (*models.Collection, error) {
+	if m.CreateCollectionFunc != nil {
+		return m.CreateCollectionFunc(req, userID)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *MockDBClient) GetCollections(userID int) ([]models.Collection, error) {
+	if m.GetCollectionsFunc != nil {
+		return m.GetCollectionsFunc(userID)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *MockDBClient) DeleteCollection(collectionID, userID int) error {
+	if m.DeleteCollectionFunc != nil {
+		return m.DeleteCollectionFunc(collectionID, userID)
+	}
+	return errors.New("not implemented")
+}
+
+func (m *MockDBClient) GetTasksByCollection(collectionID, userID int) ([]models.Task, error) {
+	if m.GetTasksByCollectionFunc != nil {
+		return m.GetTasksByCollectionFunc(collectionID, userID)
 	}
 	return nil, errors.New("not implemented")
 }
