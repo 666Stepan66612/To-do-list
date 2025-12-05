@@ -9,7 +9,7 @@ COPY . .
 
 RUN go build -o kafkaservice .
 
-FROM alpine:latest
+FROM golang:1.21-alpine
 
 WORKDIR /app
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TODO List</title>
+    <title>Мой день - To Do</title>
     <style>
         * {
             margin: 0;
@@ -13,859 +13,1401 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #faf9f8;
             min-height: 100vh;
-            padding: 20px;
+            overflow-x: hidden;
         }
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            padding: 30px;
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #faf9f8;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Auth Screen Styles */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #2564cf 0%, #5177e3 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
         }
 
         .auth-container {
-            max-width: 400px;
-            margin: 0 auto;
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 25.6px 57.6px rgba(0, 0, 0, .22), 0 4.8px 14.4px rgba(0, 0, 0, .18);
+            padding: 48px;
+            width: 440px;
+            max-width: 90%;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .auth-logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .auth-logo svg {
+            width: 48px;
+            height: 48px;
+            fill: #2564cf;
+        }
+
+        .auth-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #201f1e;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .auth-subtitle {
+            font-size: 14px;
+            color: #605e5c;
+            text-align: center;
+            margin-bottom: 24px;
         }
 
         .hidden {
             display: none !important;
         }
 
-        .user-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 5px;
-        }
-
-        .user-name {
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .btn-logout {
-            padding: 8px 20px;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .btn-logout:hover {
-            background: #c82333;
-        }
-
         .auth-form {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 16px;
         }
 
-        .auth-form h2 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 10px;
+        .auth-input {
+            padding: 12px 16px;
+            border: 1px solid #8a8886;
+            border-radius: 2px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
         }
 
-        .auth-form input {
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
+        .auth-input:hover {
+            border-color: #323130;
         }
 
-        .auth-form input:focus {
+        .auth-input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #2564cf;
+            border-width: 2px;
+            padding: 11px 15px;
         }
 
-        .auth-form button {
-            padding: 12px;
-            background: #667eea;
+        .auth-button {
+            padding: 12px 24px;
+            background: #2564cf;
             color: white;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
+            border-radius: 2px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: background 0.2s;
+            font-family: inherit;
         }
 
-        .auth-form button:hover {
-            background: #5568d3;
+        .auth-button:hover {
+            background: #1f57bb;
+        }
+
+        .auth-button:active {
+            background: #164a9b;
         }
 
         .auth-switch {
             text-align: center;
-            margin-top: 15px;
-            color: #666;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #605e5c;
         }
 
-        .auth-switch a {
-            color: #667eea;
+        .auth-link {
+            color: #2564cf;
             cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-link:hover {
             text-decoration: underline;
         }
 
-        .auth-switch a:hover {
-            color: #5568d3;
+        .error-message {
+            background: #fde7e9;
+            color: #a80000;
+            padding: 12px 16px;
+            border-radius: 2px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            border-left: 3px solid #a80000;
         }
 
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
+        /* Main App Layout */
+        .app-container {
+            display: flex;
+            height: 100vh;
         }
 
-        .add-task {
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: #f3f2f1;
+            border-right: 1px solid #edebe9;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            margin-bottom: 30px;
+            transition: transform 0.3s ease;
         }
 
-        .add-task-row {
+        .sidebar-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #edebe9;
+        }
+
+        .user-profile {
             display: flex;
-            gap: 10px;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
         }
 
-        .add-task input,
-        .add-task textarea {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .add-task textarea {
-            resize: vertical;
-            min-height: 60px;
-        }
-
-        .add-task input:focus,
-        .add-task textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .add-task button {
-            padding: 12px 30px;
-            background: #667eea;
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2564cf 0%, #5177e3 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
-            border: none;
-            border-radius: 5px;
+            font-weight: 600;
             font-size: 16px;
+        }
+
+        .user-name {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 600;
+            color: #201f1e;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .logout-button {
+            background: none;
+            border: none;
+            color: #605e5c;
             cursor: pointer;
-            transition: background 0.3s;
-            align-self: flex-start;
+            padding: 6px;
+            border-radius: 2px;
+            transition: all 0.2s;
         }
 
-        .add-task button:hover {
-            background: #5568d3;
+        .logout-button:hover {
+            background: #e1dfdd;
+            color: #201f1e;
         }
 
-        .filters {
+        .sidebar-menu {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .menu-item {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #201f1e;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .menu-item:hover {
+            background: #e1dfdd;
+        }
+
+        .menu-item.active {
+            background: #edebe9;
+            font-weight: 600;
+        }
+
+        .menu-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            width: 3px;
+            height: 32px;
+            background: #2564cf;
+            border-radius: 0 2px 2px 0;
+        }
+
+        .menu-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
             justify-content: center;
         }
 
-        .filters button {
-            padding: 8px 20px;
-            border: 2px solid #667eea;
+        .task-count {
+            margin-left: auto;
+            color: #605e5c;
+            font-size: 12px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .content-header {
+            padding: 32px 48px 24px;
             background: white;
-            color: #667eea;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
+            border-bottom: 1px solid #edebe9;
         }
 
-        .filters button.active {
-            background: #667eea;
+        .content-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2564cf;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .content-subtitle {
+            font-size: 14px;
+            color: #605e5c;
+        }
+
+        .content-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 48px;
+        }
+
+        /* Add Task */
+        .add-task-container {
+            background: white;
+            border-radius: 2px;
+            box-shadow: 0 1.6px 3.6px rgba(0, 0, 0, .132), 0 0.3px 0.9px rgba(0, 0, 0, .108);
+            margin-bottom: 24px;
+            transition: all 0.2s;
+        }
+
+        .add-task-container:hover {
+            box-shadow: 0 3.2px 7.2px rgba(0, 0, 0, .132), 0 0.6px 1.8px rgba(0, 0, 0, .108);
+        }
+
+        .add-task-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: none;
+            font-size: 14px;
+            font-family: inherit;
+            background: transparent;
+        }
+
+        .add-task-input:focus {
+            outline: none;
+        }
+
+        .add-task-input::placeholder {
+            color: #a19f9d;
+        }
+
+        .add-task-expanded {
+            border-top: 1px solid #edebe9;
+            padding: 16px 20px;
+            display: none;
+        }
+
+        .add-task-expanded.active {
+            display: block;
+        }
+
+        .add-task-textarea {
+            width: 100%;
+            min-height: 60px;
+            padding: 8px 0;
+            border: none;
+            font-size: 13px;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 12px;
+        }
+
+        .add-task-textarea:focus {
+            outline: none;
+        }
+
+        .add-task-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .btn-primary {
+            padding: 8px 16px;
+            background: #2564cf;
             color: white;
+            border: none;
+            border-radius: 2px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
         }
 
+        .btn-primary:hover {
+            background: #1f57bb;
+        }
+
+        .btn-secondary {
+            padding: 8px 16px;
+            background: transparent;
+            color: #323130;
+            border: none;
+            border-radius: 2px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: #f3f2f1;
+        }
+
+        /* Task List */
         .task-list {
             list-style: none;
         }
 
-        .task-item {
+        .task-card {
+            background: white;
+            border-radius: 2px;
+            box-shadow: 0 1.6px 3.6px rgba(0, 0, 0, .132), 0 0.3px 0.9px rgba(0, 0, 0, .108);
+            margin-bottom: 8px;
+            transition: all 0.2s;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .task-card:hover {
+            box-shadow: 0 3.2px 7.2px rgba(0, 0, 0, .132), 0 0.6px 1.8px rgba(0, 0, 0, .108);
+            transform: translateY(-1px);
+        }
+
+        .task-card-content {
             display: flex;
             align-items: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            transition: all 0.3s;
+            padding: 16px 20px;
+            cursor: pointer;
         }
 
-        .task-item:hover {
-            background: #e9ecef;
-            transform: translateX(5px);
-        }
-
-        .task-item.completed {
-            background: #d4edda;
-            border-left: 4px solid #28a745;
-        }
-
-        .task-item.completed:hover {
-            background: #c3e6cb;
+        .task-checkbox-wrapper {
+            margin-right: 16px;
         }
 
         .task-checkbox {
             width: 20px;
             height: 20px;
-            margin-right: 15px;
+            border: 2px solid #a19f9d;
+            border-radius: 50%;
             cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+        }
+
+        .task-checkbox:hover {
+            border-color: #2564cf;
+        }
+
+        .task-checkbox.checked {
+            background: #107c10;
+            border-color: #107c10;
+        }
+
+        .task-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
         }
 
         .task-info {
             flex: 1;
+            min-width: 0;
         }
 
-        .task-name {
-            font-size: 16px;
-            color: #333;
-            margin-bottom: 5px;
+        .task-title {
+            font-size: 14px;
+            color: #201f1e;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        .task-dates {
+        .task-card.completed .task-title {
+            text-decoration: line-through;
+            color: #8a8886;
+        }
+
+        .task-meta {
             font-size: 12px;
-            color: #666;
+            color: #605e5c;
         }
 
         .task-actions {
             display: flex;
-            gap: 10px;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
         }
 
-        .btn-delete {
-            padding: 8px 15px;
-            background: #dc3545;
-            color: white;
+        .task-card:hover .task-actions {
+            opacity: 1;
+        }
+
+        .task-action-btn {
+            width: 32px;
+            height: 32px;
             border: none;
-            border-radius: 5px;
+            background: transparent;
+            border-radius: 2px;
             cursor: pointer;
-            font-size: 14px;
-            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #605e5c;
+            transition: all 0.2s;
         }
 
-        .btn-delete:hover {
-            background: #c82333;
+        .task-action-btn:hover {
+            background: #f3f2f1;
+            color: #201f1e;
         }
 
+        .task-action-btn.delete:hover {
+            background: #fde7e9;
+            color: #a80000;
+        }
+
+        /* Empty State */
         .empty-state {
             text-align: center;
-            padding: 40px;
-            color: #999;
+            padding: 60px 20px;
+            color: #8a8886;
         }
 
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            display: none;
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
         }
 
-        .success {
-            background: #d4edda;
-            color: #155724;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            display: none;
+        .empty-state-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #605e5c;
+            margin-bottom: 8px;
         }
 
-        .modal {
-            display: none;
+        .empty-state-text {
+            font-size: 14px;
+            color: #8a8886;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 16px 20px;
+            border-radius: 2px;
+            box-shadow: 0 6.4px 14.4px rgba(0, 0, 0, .132), 0 1.2px 3.6px rgba(0, 0, 0, .108);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 320px;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease-out;
+            border-left: 4px solid #107c10;
+        }
+
+        .notification.error {
+            border-left-color: #a80000;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .notification-icon {
+            font-size: 20px;
+        }
+
+        .notification-message {
+            flex: 1;
+            font-size: 14px;
+            color: #201f1e;
+        }
+
+        /* Modal */
+        .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        .modal.active {
-            display: flex;
+            z-index: 2000;
+            animation: fadeIn 0.2s ease-out;
         }
 
         .modal-content {
             background: white;
-            border-radius: 10px;
-            padding: 30px;
-            max-width: 600px;
-            width: 90%;
+            border-radius: 2px;
+            box-shadow: 0 25.6px 57.6px rgba(0, 0, 0, .22), 0 4.8px 14.4px rgba(0, 0, 0, .18);
+            width: 600px;
+            max-width: 90%;
             max-height: 80vh;
-            overflow-y: auto;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: scaleIn 0.2s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         .modal-header {
+            padding: 24px 32px;
+            border-bottom: 1px solid #edebe9;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            justify-content: space-between;
         }
 
-        .modal-header h2 {
-            color: #333;
-            margin: 0;
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #201f1e;
         }
 
         .modal-close {
-            background: none;
+            width: 32px;
+            height: 32px;
             border: none;
-            font-size: 28px;
-            color: #999;
+            background: transparent;
+            border-radius: 2px;
             cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #605e5c;
+            font-size: 20px;
+            transition: all 0.2s;
         }
 
         .modal-close:hover {
-            color: #333;
+            background: #f3f2f1;
+            color: #201f1e;
+        }
+
+        .modal-body {
+            padding: 32px;
+            overflow-y: auto;
         }
 
         .modal-field {
-            margin-bottom: 15px;
+            margin-bottom: 24px;
         }
 
-        .modal-field label {
-            display: block;
-            font-weight: bold;
-            color: #666;
-            margin-bottom: 5px;
+        .modal-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #605e5c;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .modal-value {
             font-size: 14px;
+            color: #201f1e;
+            line-height: 1.6;
         }
 
-        .modal-field-value {
-            color: #333;
-            font-size: 16px;
-            word-wrap: break-word;
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
         }
 
-        .task-item:hover {
-            cursor: pointer;
+        .status-badge.completed {
+            background: #dff6dd;
+            color: #107c10;
+        }
+
+        .status-badge.active {
+            background: #fff4ce;
+            color: #8a8886;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                height: 100vh;
+                z-index: 1000;
+            }
+
+            .sidebar.open {
+                transform: translateX(280px);
+            }
+
+            .content-header {
+                padding: 24px 24px 16px;
+            }
+
+            .content-title {
+                font-size: 24px;
+            }
+
+            .content-body {
+                padding: 16px 24px;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c8c6c4;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a19f9d;
         }
     </style>
 </head>
 
 <body>
-    <!-- Auth Screen -->
-    <div class="auth-container" id="authScreen">
-        <div class="error" id="authError"></div>
 
-        <!-- Login Form -->
-        <div class="auth-form" id="loginForm">
-            <h2>🔐 Вход</h2>
-            <input type="text" id="loginUsername" placeholder="Логин" />
-            <input type="password" id="loginPassword" placeholder="Пароль" />
-            <button onclick="login()">Войти</button>
-            <div class="auth-switch">
-                Нет аккаунта? <a onclick="showRegister()">Регистрация</a>
+    <body>
+        <!-- Auth Screen -->
+        <div class="auth-overlay" id="authScreen">
+            <div class="auth-container">
+                <div class="auth-logo">
+                    <svg viewBox="0 0 48 48">
+                        <path
+                            d="M42,6H6C3.8,6,2,7.8,2,10v28c0,2.2,1.8,4,4,4h36c2.2,0,4-1.8,4-4V10C46,7.8,44.2,6,42,6z M42,38H6V14h36V38z M20,30 l-2.5-2.5L13,32l7,7l15-15l-4.5-4.5L20,30z" />
+                    </svg>
+                </div>
+
+                <!-- Login Form -->
+                <div class="auth-form" id="loginForm">
+                    <div class="auth-title">Добро пожаловать</div>
+                    <div class="auth-subtitle">Войдите в свою учётную запись</div>
+                    <div class="error-message hidden" id="authError"></div>
+                    <input type="text" id="loginUsername" class="auth-input" placeholder="Логин" />
+                    <input type="password" id="loginPassword" class="auth-input" placeholder="Пароль" />
+                    <button class="auth-button" onclick="login()">Войти</button>
+                    <div class="auth-switch">
+                        Нет учётной записи? <a class="auth-link" onclick="showRegister()">Создать</a>
+                    </div>
+                </div>
+
+                <!-- Register Form -->
+                <div class="auth-form hidden" id="registerForm">
+                    <div class="auth-title">Создать учётную запись</div>
+                    <div class="auth-subtitle">Присоединяйтесь к нам сегодня</div>
+                    <div class="error-message hidden" id="authErrorReg"></div>
+                    <input type="text" id="registerUsername" class="auth-input"
+                        placeholder="Логин (минимум 3 символа)" />
+                    <input type="password" id="registerPassword" class="auth-input"
+                        placeholder="Пароль (минимум 8 символов)" />
+                    <button class="auth-button" onclick="register()">Создать учётную запись</button>
+                    <div class="auth-switch">
+                        Уже есть учётная запись? <a class="auth-link" onclick="showLogin()">Войти</a>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Register Form -->
-        <div class="auth-form hidden" id="registerForm">
-            <h2>📝 Регистрация</h2>
-            <input type="text" id="registerUsername" placeholder="Логин (минимум 3 символа)" />
-            <input type="password" id="registerPassword" placeholder="Пароль (минимум 8 символов)" />
-            <button onclick="register()">Зарегистрироваться</button>
-            <div class="auth-switch">
-                Уже есть аккаунт? <a onclick="showLogin()">Войти</a>
+        <!-- Main App -->
+        <div class="app-container hidden" id="mainApp">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <div class="user-profile">
+                        <div class="user-avatar" id="userAvatar">U</div>
+                        <div class="user-name" id="currentUser">Пользователь</div>
+                        <button class="logout-button" onclick="logout()" title="Выйти">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M6 13V11H2V5H6V3H2C0.9 3 0 3.9 0 5V11C0 12.1 0.9 13 2 13H6Z" />
+                                <path d="M11.5 8L8 4.5L9.5 3L15 8.5L9.5 14L8 12.5L11.5 9H4V7H11.5V8Z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-menu">
+                    <div class="menu-item active" onclick="filterTasks('all')">
+                        <div class="menu-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                <path
+                                    d="M10 3C6.13 3 3 6.13 3 10C3 13.87 6.13 17 10 17C13.87 17 17 13.87 17 10C17 6.13 13.87 3 10 3ZM10 15C7.24 15 5 12.76 5 10C5 7.24 7.24 5 10 5C12.76 5 15 7.24 15 10C15 12.76 12.76 15 10 15ZM10.5 7H9V11L12.25 13.15L13 11.92L10.5 10.25V7Z" />
+                            </svg>
+                        </div>
+                        Мой день
+                        <span class="task-count" id="allCount">0</span>
+                    </div>
+
+                    <div class="menu-item" onclick="filterTasks('active')">
+                        <div class="menu-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                <path
+                                    d="M16 2H4C2.9 2 2 2.9 2 4V16C2 17.1 2.9 18 4 18H16C17.1 18 18 17.1 18 16V4C18 2.9 17.1 2 16 2ZM16 16H4V4H16V16Z" />
+                            </svg>
+                        </div>
+                        Активные
+                        <span class="task-count" id="activeCount">0</span>
+                    </div>
+
+                    <div class="menu-item" onclick="filterTasks('completed')">
+                        <div class="menu-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                <path
+                                    d="M16 2H4C2.9 2 2 2.9 2 4V16C2 17.1 2.9 18 4 18H16C17.1 18 18 17.1 18 16V4C18 2.9 17.1 2 16 2ZM8 14L4 10L5.41 8.59L8 11.17L14.59 4.58L16 6L8 14Z" />
+                            </svg>
+                        </div>
+                        Завершённые
+                        <span class="task-count" id="completedCount">0</span>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Main App -->
-    <div class="container hidden" id="mainApp">
-        <div class="user-info">
-            <div>
-                <span>Пользователь: </span>
-                <span class="user-name" id="currentUser"></span>
-            </div>
-            <button class="btn-logout" onclick="logout()">Выйти</button>
-        </div>
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="content-header">
+                    <div class="content-title">
+                        <span id="headerIcon">☀️</span>
+                        <span id="headerTitle">Мой день</span>
+                    </div>
+                    <div class="content-subtitle" id="headerSubtitle">Четверг, 5 декабря</div>
+                </div>
 
-        <h1>📝 TODO List</h1>
-
-        <div class="error" id="error"></div>
-        <div class="success" id="success"></div>
-
-        <div class="add-task">
-            <div class="add-task-row">
-                <input type="text" id="taskInput" placeholder="Введите название задачи..." />
-                <button onclick="createTask()">Добавить</button>
-            </div>
-            <textarea id="taskDescription" placeholder="Описание задачи (необязательно)..."></textarea>
-        </div>
-
-        <div class="filters">
-            <button class="active" onclick="filterTasks('all')">Все</button>
-            <button onclick="filterTasks('active')">Активные</button>
-            <button onclick="filterTasks('completed')">Завершённые</button>
-        </div>
-
-        <ul class="task-list" id="taskList"></ul>
-    </div>
-
-    <!-- Modal for task details -->
-    <div class="modal" id="taskModal" onclick="closeModalOnBackdrop(event)">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Детали задачи</h2>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-field">
-                <label>ID:</label>
-                <div class="modal-field-value" id="modalId"></div>
-            </div>
-            <div class="modal-field">
-                <label>Название:</label>
-                <div class="modal-field-value" id="modalName"></div>
-            </div>
-            <div class="modal-field">
-                <label>Описание:</label>
-                <div class="modal-field-value" id="modalText"></div>
-            </div>
-            <div class="modal-field">
-                <label>Создано:</label>
-                <div class="modal-field-value" id="modalCreateTime"></div>
-            </div>
-            <div class="modal-field">
-                <label>Статус:</label>
-                <div class="modal-field-value" id="modalStatus"></div>
-            </div>
-            <div class="modal-field" id="modalCompleteAtField" style="display: none;">
-                <label>Завершено:</label>
-                <div class="modal-field-value" id="modalCompleteAt"></div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const API_URL = 'http://localhost:8081';
-        let currentFilter = 'all';
-        let tasks = [];
-
-        // Проверка авторизации при старте
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAuth();
-        });
-
-        function checkAuth() {
-            const token = localStorage.getItem('token');
-            const username = localStorage.getItem('username');
-
-            if (token && username) {
-                showMainApp(username);
-                loadTasks();
-            } else {
-                showAuthScreen();
-            }
-        }
-
-        function showAuthScreen() {
-            document.getElementById('authScreen').classList.remove('hidden');
-            document.getElementById('mainApp').classList.add('hidden');
-        }
-
-        function showMainApp(username) {
-            document.getElementById('authScreen').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('currentUser').textContent = username;
-        }
-
-        function showLogin() {
-            document.getElementById('loginForm').classList.remove('hidden');
-            document.getElementById('registerForm').classList.add('hidden');
-        }
-
-        function showRegister() {
-            document.getElementById('loginForm').classList.add('hidden');
-            document.getElementById('registerForm').classList.remove('hidden');
-        }
-
-        async function login() {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value;
-
-            if (!username || !password) {
-                showAuthError('Заполните все поля');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_URL}/login`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ username, password })
-                });
-
-                if (!response.ok) {
-                    const error = await response.text();
-                    throw new Error(error || 'Ошибка входа');
-                }
-
-                const data = await response.json();
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('username', data.username);
-
-                document.getElementById('loginUsername').value = '';
-                document.getElementById('loginPassword').value = '';
-
-                showMainApp(data.username);
-                loadTasks();
-            } catch (error) {
-                showAuthError(error.message);
-            }
-        }
-
-        async function register() {
-            const username = document.getElementById('registerUsername').value.trim();
-            const password = document.getElementById('registerPassword').value;
-
-            if (!username || !password) {
-                showAuthError('Заполните все поля');
-                return;
-            }
-
-            if (username.length < 3) {
-                showAuthError('Логин должен быть минимум 3 символа');
-                return;
-            }
-
-            if (password.length < 8) {
-                showAuthError('Пароль должен быть минимум 8 символов');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_URL}/register`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ username, password })
-                });
-
-                if (!response.ok) {
-                    const error = await response.text();
-                    throw new Error(error || 'Ошибка регистрации');
-                }
-
-                const data = await response.json();
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('username', data.username);
-
-                document.getElementById('registerUsername').value = '';
-                document.getElementById('registerPassword').value = '';
-
-                showMainApp(data.username);
-                loadTasks();
-            } catch (error) {
-                showAuthError(error.message);
-            }
-        }
-
-        function logout() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('username');
-            tasks = [];
-            showAuthScreen();
-            showLogin();
-        }
-
-        function getAuthHeaders() {
-            const token = localStorage.getItem('token');
-            return {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            };
-        }
-
-        // Обработка Enter в поле ввода
-        document.getElementById('taskInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                createTask();
-            }
-        });
-
-        async function loadTasks() {
-            try {
-                const response = await fetch(`${API_URL}/tasks`, {
-                    headers: getAuthHeaders()
-                });
-
-                if (response.status === 401) {
-                    logout();
-                    return;
-                }
-
-                if (!response.ok) throw new Error('Ошибка загрузки задач');
-
-                const data = await response.json();
-                tasks = data || [];
-                renderTasks();
-            } catch (error) {
-                showError('Не удалось загрузить задачи: ' + error.message);
-            }
-        }
-
-        async function createTask() {
-            const input = document.getElementById('taskInput');
-            const descriptionInput = document.getElementById('taskDescription');
-            const taskName = input.value.trim();
-            const taskDescription = descriptionInput.value.trim();
-
-            if (!taskName) {
-                showError('Введите название задачи');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_URL}/create`, {
-                    method: 'POST',
-                    headers: getAuthHeaders(),
-                    body: JSON.stringify({
-                        name: taskName,
-                        text: taskDescription
-                    })
-                });
-
-                if (response.status === 401) {
-                    logout();
-                    return;
-                }
-
-                if (!response.ok) throw new Error('Ошибка создания задачи');
-
-                input.value = '';
-                descriptionInput.value = '';
-                showSuccess('Задача добавлена');
-                await loadTasks();
-            } catch (error) {
-                showError('Не удалось создать задачу: ' + error.message);
-            }
-        } async function completeTask(id, complete) {
-            if (complete) {
-                showError('Задача уже завершена');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_URL}/complete/${id}`, {
-                    method: 'POST',
-                    headers: getAuthHeaders()
-                });
-
-                if (response.status === 401) {
-                    logout();
-                    return;
-                }
-
-                if (!response.ok) throw new Error('Ошибка завершения задачи');
-
-                showSuccess('Задача завершена');
-                await loadTasks();
-            } catch (error) {
-                showError('Не удалось завершить задачу: ' + error.message);
-            }
-        }
-
-        async function deleteTask(id) {
-            if (!confirm('Удалить задачу?')) return;
-
-            try {
-                const response = await fetch(`${API_URL}/delete/${id}`, {
-                    method: 'DELETE',
-                    headers: getAuthHeaders()
-                });
-
-                if (response.status === 401) {
-                    logout();
-                    return;
-                }
-
-                if (!response.ok) throw new Error('Ошибка удаления задачи');
-
-                showSuccess('Задача удалена');
-                await loadTasks();
-            } catch (error) {
-                showError('Не удалось удалить задачу: ' + error.message);
-            }
-        }
-
-        function filterTasks(filter) {
-            currentFilter = filter;
-
-            // Обновляем активную кнопку
-            document.querySelectorAll('.filters button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-
-            renderTasks();
-        }
-
-        function renderTasks() {
-            const taskList = document.getElementById('taskList');
-
-            let filteredTasks = tasks;
-            if (currentFilter === 'active') {
-                filteredTasks = tasks.filter(t => !t.complete);
-            } else if (currentFilter === 'completed') {
-                filteredTasks = tasks.filter(t => t.complete);
-            }
-
-            if (filteredTasks.length === 0) {
-                taskList.innerHTML = '<div class="empty-state">Нет задач</div>';
-                return;
-            }
-
-            taskList.innerHTML = filteredTasks.map(task => `
-                <li class="task-item ${task.complete ? 'completed' : ''}" onclick="showTaskDetails(${task.id})">
-                    <input 
-                        type="checkbox" 
-                        class="task-checkbox" 
-                        ${task.complete ? 'checked' : ''}
-                        ${task.complete ? 'disabled' : ''}
-                        onchange="event.stopPropagation(); completeTask(${task.id}, ${task.complete})"
-                    />
-                    <div class="task-info">
-                        <div class="task-name">${escapeHtml(task.name)}</div>
-                        <div class="task-dates">
-                            Создано: ${formatDate(task.create_time)}
-                            ${task.complete_at ? ' | Завершено: ' + formatDate(task.complete_at) : ''}
+                <div class="content-body">
+                    <!-- Add Task -->
+                    <div class="add-task-container">
+                        <input type="text" id="taskInput" class="add-task-input" placeholder="+ Добавить задачу"
+                            onfocus="showTaskExpanded()" />
+                        <div class="add-task-expanded" id="taskExpanded">
+                            <textarea id="taskDescription" class="add-task-textarea"
+                                placeholder="Добавить примечание"></textarea>
+                            <div class="add-task-actions">
+                                <button class="btn-secondary" onclick="cancelTask()">Отмена</button>
+                                <button class="btn-primary" onclick="createTask()">Добавить</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="task-actions">
-                        <button class="btn-delete" onclick="event.stopPropagation(); deleteTask(${task.id})">Удалить</button>
+
+                    <!-- Task List -->
+                    <ul class="task-list" id="taskList"></ul>
+
+                    <!-- Empty State -->
+                    <div class="empty-state hidden" id="emptyState">
+                        <div class="empty-state-icon">✓</div>
+                        <div class="empty-state-title">Задачи на сегодня выполнены</div>
+                        <div class="empty-state-text">Сосредоточьтесь на своём дне</div>
                     </div>
-                </li>
-            `).join('');
-        }
+                </div>
+            </div>
+        </div>
 
-        function showTaskDetails(taskId) {
-            const task = tasks.find(t => t.id === taskId);
-            if (!task) return;
+        <!-- Task Detail Modal -->
+        <div class="modal-overlay hidden" id="taskModal" onclick="closeModalOnBackdrop(event)">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Детали задачи</div>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-field">
+                        <div class="modal-label">Название</div>
+                        <div class="modal-value" id="modalName"></div>
+                    </div>
+                    <div class="modal-field">
+                        <div class="modal-label">Примечание</div>
+                        <div class="modal-value" id="modalText"></div>
+                    </div>
+                    <div class="modal-field">
+                        <div class="modal-label">Статус</div>
+                        <div class="modal-value" id="modalStatus"></div>
+                    </div>
+                    <div class="modal-field">
+                        <div class="modal-label">Создано</div>
+                        <div class="modal-value" id="modalCreateTime"></div>
+                    </div>
+                    <div class="modal-field hidden" id="modalCompleteAtField">
+                        <div class="modal-label">Завершено</div>
+                        <div class="modal-value" id="modalCompleteAt"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-            document.getElementById('modalId').textContent = task.id;
-            document.getElementById('modalName').textContent = task.name;
-            document.getElementById('modalText').textContent = task.text || 'Нет описания';
-            document.getElementById('modalCreateTime').textContent = formatDate(task.create_time);
-            document.getElementById('modalStatus').textContent = task.complete ? '✅ Завершена' : '⏳ В процессе';
+        <!-- Notification Container -->
+        <div id="notificationContainer"></div>
 
-            const completeAtField = document.getElementById('modalCompleteAtField');
-            if (task.complete_at) {
-                document.getElementById('modalCompleteAt').textContent = formatDate(task.complete_at);
-                completeAtField.style.display = 'block';
-            } else {
-                completeAtField.style.display = 'none';
-            }
+        <script>
+            const API_URL = 'http://localhost:8081';
+            let currentFilter = 'all';
+            let tasks = [];
+            let taskExpanded = false;
 
-            document.getElementById('taskModal').classList.add('active');
-        }
-
-        function closeModal() {
-            document.getElementById('taskModal').classList.remove('active');
-        }
-
-        function closeModalOnBackdrop(event) {
-            if (event.target.id === 'taskModal') {
-                closeModal();
-            }
-        }
-
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toLocaleString('ru-RU', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
+            // Проверка авторизации при старте
+            document.addEventListener('DOMContentLoaded', () => {
+                checkAuth();
+                updateHeaderSubtitle();
             });
-        }
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+            function checkAuth() {
+                const token = localStorage.getItem('token');
+                const username = localStorage.getItem('username');
 
-        function showError(message) {
-            const errorDiv = document.getElementById('error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
-
-        function showSuccess(message) {
-            const successDiv = document.getElementById('success');
-            successDiv.textContent = message;
-            successDiv.style.display = 'block';
-            setTimeout(() => {
-                successDiv.style.display = 'none';
-            }, 3000);
-        }
-
-        function showAuthError(message) {
-            const errorDiv = document.getElementById('authError');
-            errorDiv.className = 'error';
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
-
-        // Enter для форм авторизации
-        document.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const loginForm = document.getElementById('loginForm');
-                const registerForm = document.getElementById('registerForm');
-
-                if (!loginForm.classList.contains('hidden')) {
-                    login();
-                } else if (!registerForm.classList.contains('hidden')) {
-                    register();
+                if (token && username) {
+                    showMainApp(username);
+                    loadTasks();
+                } else {
+                    showAuthScreen();
                 }
             }
-        });
-    </script>
-</body>
+
+            function showAuthScreen() {
+                document.getElementById('authScreen').classList.remove('hidden');
+                document.getElementById('mainApp').classList.add('hidden');
+            }
+
+            function showMainApp(username) {
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                document.getElementById('currentUser').textContent = username;
+
+                // Установка аватара
+                const avatar = username.charAt(0).toUpperCase();
+                document.getElementById('userAvatar').textContent = avatar;
+            }
+
+            function showLogin() {
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('registerForm').classList.add('hidden');
+            }
+
+            function showRegister() {
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('registerForm').classList.remove('hidden');
+            }
+
+            async function login() {
+                const username = document.getElementById('loginUsername').value.trim();
+                const password = document.getElementById('loginPassword').value;
+
+                if (!username || !password) {
+                    showAuthError('Заполните все поля', 'authError');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_URL}/login`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error || 'Ошибка входа');
+                    }
+
+                    const data = await response.json();
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('username', data.username);
+
+                    document.getElementById('loginUsername').value = '';
+                    document.getElementById('loginPassword').value = '';
+
+                    showMainApp(data.username);
+                    loadTasks();
+                } catch (error) {
+                    showAuthError(error.message, 'authError');
+                }
+            }
+
+            async function register() {
+                const username = document.getElementById('registerUsername').value.trim();
+                const password = document.getElementById('registerPassword').value;
+
+                if (!username || !password) {
+                    showAuthError('Заполните все поля', 'authErrorReg');
+                    return;
+                }
+
+                if (username.length < 3) {
+                    showAuthError('Логин должен быть минимум 3 символа', 'authErrorReg');
+                    return;
+                }
+
+                if (password.length < 8) {
+                    showAuthError('Пароль должен быть минимум 8 символов', 'authErrorReg');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_URL}/register`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error || 'Ошибка регистрации');
+                    }
+
+                    const data = await response.json();
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('username', data.username);
+
+                    document.getElementById('registerUsername').value = '';
+                    document.getElementById('registerPassword').value = '';
+
+                    showMainApp(data.username);
+                    loadTasks();
+                } catch (error) {
+                    showAuthError(error.message, 'authErrorReg');
+                }
+            }
+
+            function logout() {
+                localStorage.removeItem('token');
+                localStorage.removeItem('username');
+                tasks = [];
+                showAuthScreen();
+                showLogin();
+            }
+
+            function getAuthHeaders() {
+                const token = localStorage.getItem('token');
+                return {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+            }
+
+            function updateHeaderSubtitle() {
+                const date = new Date();
+                const options = { weekday: 'long', day: 'numeric', month: 'long' };
+                const dateStr = date.toLocaleDateString('ru-RU', options);
+                document.getElementById('headerSubtitle').textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+            }
+
+            function updateTaskCounts() {
+                const all = tasks.length;
+                const active = tasks.filter(t => !t.complete).length;
+                const completed = tasks.filter(t => t.complete).length;
+
+                document.getElementById('allCount').textContent = all;
+                document.getElementById('activeCount').textContent = active;
+                document.getElementById('completedCount').textContent = completed;
+            }
+
+            function showTaskExpanded() {
+                document.getElementById('taskExpanded').classList.add('active');
+                taskExpanded = true;
+            }
+
+            function cancelTask() {
+                document.getElementById('taskInput').value = '';
+                document.getElementById('taskDescription').value = '';
+                document.getElementById('taskExpanded').classList.remove('active');
+                document.getElementById('taskInput').blur();
+                taskExpanded = false;
+            }
+
+            async function loadTasks() {
+                try {
+                    const response = await fetch(`${API_URL}/tasks`, {
+                        headers: getAuthHeaders()
+                    });
+
+                    if (response.status === 401) {
+                        logout();
+                        return;
+                    }
+
+                    if (!response.ok) throw new Error('Ошибка загрузки задач');
+
+                    const data = await response.json();
+                    tasks = data || [];
+                    updateTaskCounts();
+                    renderTasks();
+                } catch (error) {
+                    showNotification('Не удалось загрузить задачи: ' + error.message, 'error');
+                }
+            }
+
+            async function createTask() {
+                const input = document.getElementById('taskInput');
+                const descriptionInput = document.getElementById('taskDescription');
+                const taskName = input.value.trim();
+                const taskDescription = descriptionInput.value.trim();
+
+                if (!taskName) {
+                    showNotification('Введите название задачи', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_URL}/create`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({
+                            name: taskName,
+                            text: taskDescription
+                        })
+                    });
+
+                    if (response.status === 401) {
+                        logout();
+                        return;
+                    }
+
+                    if (!response.ok) throw new Error('Ошибка создания задачи');
+
+                    cancelTask();
+                    showNotification('Задача добавлена', 'success');
+                    await loadTasks();
+                } catch (error) {
+                    showNotification('Не удалось создать задачу: ' + error.message, 'error');
+                }
+            }
+
+            async function completeTask(id, complete) {
+                if (complete) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_URL}/complete/${id}`, {
+                        method: 'POST',
+                        headers: getAuthHeaders()
+                    });
+
+                    if (response.status === 401) {
+                        logout();
+                        return;
+                    }
+
+                    if (!response.ok) throw new Error('Ошибка завершения задачи');
+
+                    showNotification('Задача завершена', 'success');
+                    await loadTasks();
+                } catch (error) {
+                    showNotification('Не удалось завершить задачу: ' + error.message, 'error');
+                }
+            }
+
+            async function deleteTask(id) {
+                try {
+                    const response = await fetch(`${API_URL}/delete/${id}`, {
+                        method: 'DELETE',
+                        headers: getAuthHeaders()
+                    });
+
+                    if (response.status === 401) {
+                        logout();
+                        return;
+                    }
+
+                    if (!response.ok) throw new Error('Ошибка удаления задачи');
+
+                    showNotification('Задача удалена', 'success');
+                    await loadTasks();
+                } catch (error) {
+                    showNotification('Не удалось удалить задачу: ' + error.message, 'error');
+                }
+            }
+
+            function filterTasks(filter) {
+                currentFilter = filter;
+
+                // Обновление активного пункта меню
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                event.target.closest('.menu-item').classList.add('active');
+
+                // Обновление заголовка
+                const icons = { all: '☀️', active: '⭐', completed: '✓' };
+                const titles = { all: 'Мой день', active: 'Активные', completed: 'Завершённые' };
+
+                document.getElementById('headerIcon').textContent = icons[filter];
+                document.getElementById('headerTitle').textContent = titles[filter];
+
+                renderTasks();
+            }
+
+            function renderTasks() {
+                const taskList = document.getElementById('taskList');
+                const emptyState = document.getElementById('emptyState');
+
+                let filteredTasks = tasks;
+                if (currentFilter === 'active') {
+                    filteredTasks = tasks.filter(t => !t.complete);
+                } else if (currentFilter === 'completed') {
+                    filteredTasks = tasks.filter(t => t.complete);
+                }
+
+                if (filteredTasks.length === 0) {
+                    taskList.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+
+                emptyState.classList.add('hidden');
+                taskList.innerHTML = filteredTasks.map(task => `
+                <li class="task-card ${task.complete ? 'completed' : ''}">
+                    <div class="task-card-content" onclick="showTaskDetails(${task.id})">
+                        <div class="task-checkbox-wrapper" onclick="event.stopPropagation();">
+                            <div class="task-checkbox ${task.complete ? 'checked' : ''}"
+                                onclick="completeTask(${task.id}, ${task.complete})">
+                            </div>
+                        </div>
+                        <div class="task-info">
+                            <div class="task-title">${escapeHtml(task.name)}</div>
+                            <div class="task-meta">
+                                ${task.text ? escapeHtml(task.text.substring(0, 50)) + (task.text.length > 50 ? '...' : '') : ''}
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-action-btn delete" onclick="event.stopPropagation(); deleteTask(${task.id})" title="Удалить">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                    <path d="M5 2V1.5C5 0.7 5.7 0 6.5 0h3C10.3 0 11 0.7 11 1.5V2h3.5C14.8 2 15 2.2 15 2.5S14.8 3 14.5 3h-1v11c0 1.1-0.9 2-2 2h-7c-1.1 0-2-0.9-2-2V3h-1C1.2 3 1 2.8 1 2.5S1.2 2 1.5 2H5zM6 1.5V2h4v-0.5C10 1.2 9.8 1 9.5 1h-3C6.2 1 6 1.2 6 1.5zM3.5 3v11c0 0.6 0.4 1 1 1h7c0.6 0 1-0.4 1-1V3H3.5zM6.5 5C6.8 5 7 5.2 7 5.5v7C7 12.8 6.8 13 6.5 13S6 12.8 6 12.5v-7C6 5.2 6.2 5 6.5 5zM9.5 5C9.8 5 10 5.2 10 5.5v7c0 0.3-0.2 0.5-0.5 0.5S9 12.8 9 12.5v-7C9 5.2 9.2 5 9.5 5z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </li>
+                `).join('');
+            }
+
+            function showTaskDetails(taskId) {
+                const task = tasks.find(t => t.id === taskId);
+                if (!task) return;
+
+                document.getElementById('modalName').textContent = task.name;
+                document.getElementById('modalText').textContent = task.text || 'Нет примечания';
+
+                const statusHtml = task.complete
+                    ? '<span class="status-badge completed">✓ Завершена</span>'
+                    : '<span class="status-badge active">○ В процессе</span>';
+                document.getElementById('modalStatus').innerHTML = statusHtml;
+
+                document.getElementById('modalCreateTime').textContent = formatDate(task.create_time);
+
+                const completeAtField = document.getElementById('modalCompleteAtField');
+                if (task.complete_at) {
+                    document.getElementById('modalCompleteAt').textContent = formatDate(task.complete_at);
+                    completeAtField.classList.remove('hidden');
+                } else {
+                    completeAtField.classList.add('hidden');
+                }
+
+                document.getElementById('taskModal').classList.remove('hidden');
+            }
+
+            function closeModal() {
+                document.getElementById('taskModal').classList.add('hidden');
+            }
+
+            function closeModalOnBackdrop(event) {
+                if (event.target.classList.contains('modal-overlay')) {
+                    closeModal();
+                }
+            }
+
+            function formatDate(dateString) {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                return date.toLocaleString('ru-RU', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            function showNotification(message, type = 'success') {
+                const container = document.getElementById('notificationContainer');
+
+                const notification = document.createElement('div');
+                notification.className = `notification ${type === 'error' ? 'error' : ''}`;
+
+                const icon = type === 'success' ? '✓' : '⚠';
+                notification.innerHTML = `
+                <div class="notification-icon">${icon}</div>
+                <div class="notification-message">${escapeHtml(message)}</div>
+            `;
+
+                container.appendChild(notification);
+
+                setTimeout(() => {
+                    notification.style.animation = 'slideInRight 0.3s ease-out reverse';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+            }
+
+            function showAuthError(message, elementId) {
+                const errorDiv = document.getElementById(elementId);
+                errorDiv.textContent = message;
+                errorDiv.classList.remove('hidden');
+                setTimeout(() => {
+                    errorDiv.classList.add('hidden');
+                }, 5000);
+            }
+
+            // Enter для создания задачи
+            document.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    const authScreen = document.getElementById('authScreen');
+                    const mainApp = document.getElementById('mainApp');
+
+                    if (!authScreen.classList.contains('hidden')) {
+                        const loginForm = document.getElementById('loginForm');
+                        if (!loginForm.classList.contains('hidden')) {
+                            login();
+                        } else {
+                            register();
+                        }
+                    } else if (!mainApp.classList.contains('hidden')) {
+                        const taskInput = document.getElementById('taskInput');
+                        if (document.activeElement === taskInput && taskExpanded) {
+                            e.preventDefault();
+                            createTask();
+                        }
+                    }
+                }
+            });
+
+            // Закрытие expanded формы при клике вне её
+            document.addEventListener('click', (e) => {
+                const addTaskContainer = document.querySelector('.add-task-container');
+                const taskInput = document.getElementById('taskInput');
+
+                if (taskExpanded && addTaskContainer && !addTaskContainer.contains(e.target)) {
+                    if (taskInput.value.trim() === '' && document.getElementById('taskDescription').value.trim() === '') {
+                        cancelTask();
+                    }
+                }
+            });
+        </script>
+    </body>
 
 </html>
