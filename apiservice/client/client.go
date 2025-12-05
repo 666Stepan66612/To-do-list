@@ -160,3 +160,68 @@ func (c *DBClient) GetTaskByName(name string) (*models.Task, error) {
 
 	return &task, nil
 }
+
+// Collection methods
+
+func (c *DBClient) CreateCollection(req *models.CreateCollectionRequest, userID int) (*models.Collection, error) {
+	jsonData, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	url := c.BaseURL + "/collections?user_id=" + strconv.Itoa(userID)
+	resp, err := c.Client.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var collection models.Collection
+	if err := json.NewDecoder(resp.Body).Decode(&collection); err != nil {
+		return nil, err
+	}
+
+	return &collection, nil
+}
+
+func (c *DBClient) GetCollections(userID int) ([]models.Collection, error) {
+	resp, err := c.Client.Get(c.BaseURL + "/collections?user_id=" + strconv.Itoa(userID))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var collections []models.Collection
+	if err := json.NewDecoder(resp.Body).Decode(&collections); err != nil {
+		return nil, err
+	}
+
+	return collections, nil
+}
+
+func (c *DBClient) DeleteCollection(collectionID, userID int) error {
+	url := c.BaseURL + "/collections/" + strconv.Itoa(collectionID) + "?user_id=" + strconv.Itoa(userID)
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.Client.Do(req)
+	return err
+}
+
+func (c *DBClient) GetTasksByCollection(collectionID, userID int) ([]models.Task, error) {
+	url := c.BaseURL + "/collections/" + strconv.Itoa(collectionID) + "/tasks?user_id=" + strconv.Itoa(userID)
+	resp, err := c.Client.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var tasks []models.Task
+	if err := json.NewDecoder(resp.Body).Decode(&tasks); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}

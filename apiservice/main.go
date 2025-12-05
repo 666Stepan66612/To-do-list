@@ -72,6 +72,12 @@ func main() {
 	protected.Path("/getbyid/{id}").Methods("GET", "OPTIONS").HandlerFunc(taskHandlers.HandleGetTasksByID)
 	protected.Path("/getbyname/{name}").Methods("GET", "OPTIONS").HandlerFunc(taskHandlers.HandleGetTasksByName)
 
+	// Collection routes
+	protected.Path("/collections").Methods("POST", "OPTIONS").HandlerFunc(taskHandlers.HandleCreateCollection)
+	protected.Path("/collections").Methods("GET", "OPTIONS").HandlerFunc(taskHandlers.HandleGetCollections)
+	protected.Path("/collections/{id}").Methods("DELETE", "OPTIONS").HandlerFunc(taskHandlers.HandleDeleteCollection)
+	protected.Path("/collections/{id}/tasks").Methods("GET", "OPTIONS").HandlerFunc(taskHandlers.HandleGetTasksByCollection)
+
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("API Service is healthy"))

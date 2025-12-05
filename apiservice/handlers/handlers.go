@@ -223,3 +223,112 @@ func (h *TaskHandlers) HandleGetTasksByName(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(tasks)
 }
+
+// Collection handlers
+
+func (h *TaskHandlers) HandleCreateCollection(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetUserFromContext(r)
+	if claims == nil {
+		http.Error(w, `error: Unauthorized`, http.StatusUnauthorized)
+		return
+	}
+
+	var req models.CreateCollectionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `error: Invalid JSON`, http.StatusBadRequest)
+		return
+	}
+
+	if req.Name == "" {
+		http.Error(w, `error: Name is required`, http.StatusBadRequest)
+		return
+	}
+
+	collection, err := h.DBClient.CreateCollection(&req, claims.UserID)
+	if err != nil {
+		http.Error(w, `error: Failed to create collection`, http.StatusInternalServerError)
+		return
+	}
+
+	h.EventProducer.SendEvent(
+		claims.UserID,
+		claims.Username,
+		"CREATE_COLLECTION",
+		fmt.Sprintf("Collection created: id=%d, name=%s", collection.ID, collection.Name), "SUCCESS")
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(collection)
+}
+
+func (h *TaskHandlers) HandleGetCollections(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetUserFromContext(r)
+	if claims == nil {
+		http.Error(w, `error: Unauthorized`, http.StatusUnauthorized)
+		return
+	}
+
+	collections, err := h.DBClient.GetCollections(claims.UserID)
+	if err != nil {
+		http.Error(w, `error: Failed to get collections`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(collections)
+}
+
+func (h *TaskHandlers) HandleDeleteCollection(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetUserFromContext(r)
+	if claims == nil {
+		http.Error(w, `error: Unauthorized`, http.StatusUnauthorized)
+		return
+	}
+
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, `{"error": "Invalid collection ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	err = h.DBClient.DeleteCollection(id, claims.UserID)
+	if err != nil {
+		http.Error(w, `{"error": "Failed to delete collection"}`, http.StatusInternalServerError)
+		return
+	}
+
+	h.EventProducer.SendEvent(
+		claims.UserID,
+		claims.Username,
+		"DELETE_COLLECTION",
+		fmt.Sprintf("Collection deleted: id=%d", id), "SUCCESS")
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *TaskHandlers) HandleGetTasksByCollection(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetUserFromContext(r)
+	if claims == nil {
+		http.Error(w, `error: Unauthorized`, http.StatusUnauthorized)
+		return
+	}
+
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, `{"error": "Invalid collection ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	tasks, err := h.DBClient.GetTasksByCollection(id, claims.UserID)
+	if err != nil {
+		http.Error(w, `error: Failed to get tasks`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(tasks)
+}

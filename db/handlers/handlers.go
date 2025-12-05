@@ -31,8 +31,9 @@ func (h *TaskHandlers) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var task struct {
-		Name string `json:"name"`
-		Text string `json:"text"`
+		Name         string `json:"name"`
+		Text         string `json:"text"`
+		CollectionID *int   `json:"collection_id"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
@@ -46,9 +47,10 @@ func (h *TaskHandlers) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	taskToCreate := &models.Task{
-		UserID: userID,
-		Name:   task.Name,
-		Text:   task.Text,
+		UserID:       userID,
+		Name:         task.Name,
+		Text:         task.Text,
+		CollectionID: task.CollectionID,
 	}
 
 	if err := h.Repo.CreateTask(taskToCreate); err != nil {
@@ -220,4 +222,129 @@ func (h *TaskHandlers) HandleComplete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+// Collection handlers
+
+func (h *TaskHandlers) HandleCreateCollection(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.URL.Query().Get("user_id")
+	if userIDStr == "" {
+		http.Error(w, `{"error": "user_id is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, `{"error": "Invalid user_id"}`, http.StatusBadRequest)
+		return
+	}
+
+	var collection models.Collection
+	if err := json.NewDecoder(r.Body).Decode(&collection); err != nil {
+		http.Error(w, `{"error": "Invalid JSON"}`, http.StatusBadRequest)
+		return
+	}
+
+	if collection.Name == "" {
+		http.Error(w, `{"error": "Collection name is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	if collection.Color == "" {
+		collection.Color = "#2564cf"
+	}
+	if collection.Icon == "" {
+		collection.Icon = "📁"
+	}
+
+	collection.UserID = userID
+
+	if err := h.Repo.CreateCollection(&collection); err != nil {
+		http.Error(w, `{"error": "Failed to create collection"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(collection)
+}
+
+func (h *TaskHandlers) HandleGetCollections(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.URL.Query().Get("user_id")
+	if userIDStr == "" {
+		http.Error(w, `{"error": "user_id is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, `{"error": "Invalid user_id"}`, http.StatusBadRequest)
+		return
+	}
+
+	collections, err := h.Repo.GetCollectionsByUser(userID)
+	if err != nil {
+		http.Error(w, `{"error": "Failed to fetch collections"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(collections)
+}
+
+func (h *TaskHandlers) HandleDeleteCollection(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.URL.Query().Get("user_id")
+	if userIDStr == "" {
+		http.Error(w, `{"error": "user_id is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, `{"error": "Invalid user_id"}`, http.StatusBadRequest)
+		return
+	}
+
+	vars := mux.Vars(r)["id"]
+	id, err := strconv.Atoi(vars)
+	if err != nil {
+		http.Error(w, `{"error": "Invalid collection ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.Repo.DeleteCollectionByUser(id, userID); err != nil {
+		http.Error(w, `{"error": "Failed to delete collection"}`, http.StatusForbidden)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *TaskHandlers) HandleGetTasksByCollection(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.URL.Query().Get("user_id")
+	if userIDStr == "" {
+		http.Error(w, `{"error": "user_id is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, `{"error": "Invalid user_id"}`, http.StatusBadRequest)
+		return
+	}
+
+	vars := mux.Vars(r)["id"]
+	collectionID, err := strconv.Atoi(vars)
+	if err != nil {
+		http.Error(w, `{"error": "Invalid collection ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	tasks, err := h.Repo.GetTasksByCollection(userID, collectionID)
+	if err != nil {
+		http.Error(w, `{"error": "Failed to fetch tasks"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tasks)
 }
