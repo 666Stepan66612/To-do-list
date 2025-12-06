@@ -236,8 +236,39 @@ GET /health
 
 - Docker
 - Docker Compose
+- Make (optional, for simplified commands)
 
 ### Running the Application
+
+#### Method 1: Using Make (Recommended)
+
+1. Clone the repository:
+```bash
+git clone https://github.com/666Stepan66612/To-do-list.git
+cd To-do-list
+```
+
+2. View available commands:
+```bash
+make help
+```
+
+3. Start all services:
+```bash
+make up
+```
+
+4. View logs:
+```bash
+make logs
+```
+
+5. Access the application:
+   - **Web UI**: http://localhost:8080
+   - **API**: http://localhost:8081
+   - **Event Logs**: `./logs/events.log`
+
+#### Method 2: Using Docker Compose Directly
 
 1. Clone the repository:
 ```bash
@@ -257,13 +288,116 @@ docker-compose up --build
 
 ### Stopping the Application
 
+With Make:
+```bash
+make down
+```
+
+With Docker Compose:
 ```bash
 docker-compose down
 ```
 
 To remove volumes as well:
 ```bash
-docker-compose down -v
+make clean-volumes  # or docker-compose down -v
+```
+
+### Running Tests
+
+Run all tests:
+```bash
+make test
+```
+
+Run tests for specific service:
+```bash
+make test-api
+make test-db
+make test-kafka
+```
+
+Generate coverage reports:
+```bash
+make coverage
+```
+
+### Development Workflow
+
+For active development with automatic rebuild and logs:
+```bash
+make dev
+```
+
+Restart specific service:
+```bash
+make restart-api
+make restart-db
+make restart-kafka
+make restart-frontend
+```
+
+### Makefile Commands Reference
+
+| Command | Description |
+|---------|-------------|
+| `make build` | Build all Docker images |
+| `make up` | Start all services in detached mode |
+| `make down` | Stop and remove all containers |
+| `make restart` | Restart all services |
+| `make logs` | Show logs from all services |
+| `make logs-api` | Show API service logs |
+| `make logs-db` | Show DB service logs |
+| `make logs-kafka` | Show Kafka service logs |
+| `make ps` | List running containers |
+| `make clean` | Remove containers, volumes, and images |
+| `make test` | Run all tests |
+| `make coverage` | Generate coverage reports |
+| `make dev` | Development mode (rebuild + logs) |
+| `make health` | Check service health status |
+
+### WSL (Windows Subsystem for Linux) Setup
+
+1. Install WSL with Ubuntu or Alpine:
+```powershell
+wsl --install -d Ubuntu
+```
+
+2. Enable Docker Desktop WSL integration:
+   - Open Docker Desktop
+   - Go to Settings → Resources → WSL Integration
+   - Enable integration for your WSL distro
+   - Click "Apply & Restart"
+
+3. In WSL, navigate to project:
+```bash
+cd /mnt/c/Users/YourUsername/path/to/toDo
+```
+
+4. Run Make commands:
+```bash
+make up
+make logs
+```
+
+### Troubleshooting
+
+**Docker not found in WSL:**
+- Enable WSL integration in Docker Desktop settings
+- Restart Docker Desktop
+- Restart WSL: `wsl --shutdown` (from PowerShell)
+
+**Port already in use:**
+```bash
+make down
+# Wait a few seconds
+make up
+```
+
+**Services not healthy:**
+```bash
+make health
+make logs
 ```
 
 ## Service Communication
