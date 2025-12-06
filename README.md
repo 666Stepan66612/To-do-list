@@ -4,6 +4,29 @@ A microservices-based task management application with JWT authentication, event
 
 ## Quick Start
 
+### Using Make (Recommended)
+
+```bash
+# Clone repository
+git clone https://github.com/666Stepan66612/To-do-list.git
+cd To-do-list
+
+# View all available commands
+make help
+
+# Start all services
+make up
+
+# View logs
+make logs
+
+# Access the app
+# Web UI: http://localhost:8080
+# API: http://localhost:8081
+```
+
+### Using Docker Compose
+
 ```bash
 # Clone repository
 git clone https://github.com/666Stepan66612/To-do-list.git
@@ -40,7 +63,7 @@ docker-compose up --build
 
 - **Backend:** Go 1.25, PostgreSQL 15, Kafka 7.5, JWT, Bcrypt
 - **Frontend:** HTML5/CSS3/JavaScript, Nginx
-- **Infrastructure:** Docker, Docker Compose
+- **Infrastructure:** Docker, Docker Compose, Make
 
 ## API Endpoints
 
@@ -78,6 +101,37 @@ All operations logged to `logs/events.log`:
   "details": "Task deleted: id=3",
   "status": "SUCCESS"
 }
+```
+
+## Development Commands
+
+### Make Commands
+
+| Command | Description |
+|---------|-------------|
+| `make up` | Start all services |
+| `make down` | Stop all services |
+| `make logs` | View logs from all services |
+| `make restart` | Restart all services |
+| `make test` | Run all tests |
+| `make coverage` | Generate coverage reports |
+| `make clean` | Clean up containers and volumes |
+| `make dev` | Development mode with logs |
+| `make health` | Check service health |
+
+Run `make help` to see all available commands.
+
+### WSL Setup (Windows)
+
+1. Enable Docker Desktop WSL integration:
+   - Settings → Resources → WSL Integration
+   - Enable your WSL distribution
+   - Apply & Restart
+
+2. Navigate to project in WSL:
+```bash
+cd /mnt/c/Users/YourUsername/path/to/toDo
+make up
 ```
 
 ## Production Notes
