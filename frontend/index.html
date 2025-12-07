@@ -1681,14 +1681,15 @@
 
             function toggleIconPicker() {
                 const picker = document.getElementById('iconPicker');
-                picker.classList.toggle('active');
 
-                // Инициализируем при первом открытии
-                if (!picker.innerHTML && picker.classList.contains('active')) {
+                // Инициализируем перед открытием, если ещё не инициализирован
+                if (!picker.innerHTML) {
                     initIconPicker();
                     const currentIcon = document.getElementById('collectionIcon').value;
                     selectIcon(currentIcon);
                 }
+
+                picker.classList.toggle('active');
             } function selectIcon(icon) {
                 document.getElementById('collectionIcon').value = icon;
                 document.getElementById('iconPreview').textContent = icon;
